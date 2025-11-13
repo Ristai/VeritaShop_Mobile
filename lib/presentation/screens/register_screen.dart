@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:veritashop/view_models/color_view_model.dart';
-import 'package:veritashop/widgets/custom_text_field.dart';
-import 'package:veritashop/widgets/custom_button.dart';
-import 'package:veritashop/screens/product_list_screen.dart';
+import '../../core/constants/app_colors.dart';
+import '../widgets/custom_text_field.dart';
+import '../widgets/custom_button.dart';
+import 'product_list_screen.dart';
 
 /// Màn hình đăng ký - Onboarding Journey
 class RegisterScreen extends StatefulWidget {

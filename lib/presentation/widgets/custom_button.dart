@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:veritashop/view_models/color_view_model.dart';
+import '../../core/constants/app_colors.dart';
 
 /// Widget Button tùy chỉnh với loading state và variants
 class CustomButton extends StatelessWidget {
@@ -78,3 +78,4 @@ class CustomButton extends StatelessWidget {
     );
   }
 }
+

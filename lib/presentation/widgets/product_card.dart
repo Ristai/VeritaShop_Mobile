@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:veritashop/view_models/color_view_model.dart';
-import 'package:veritashop/view_models/product_view_model.dart';
+import '../../core/constants/app_colors.dart';
+import '../view_models/product_view_model.dart';
 
 /// Widget Card hiển thị thông tin sản phẩm
 class ProductCard extends StatelessWidget {
@@ -209,3 +209,4 @@ class ProductCard extends StatelessWidget {
     );
   }
 }
+

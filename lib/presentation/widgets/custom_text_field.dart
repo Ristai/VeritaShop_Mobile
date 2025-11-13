@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:veritashop/view_models/color_view_model.dart';
+import '../../core/constants/app_colors.dart';
 
 /// Widget TextField tùy chỉnh với style nhất quán và validation
 class CustomTextField extends StatefulWidget {
@@ -109,3 +109,4 @@ class _CustomTextFieldState extends State<CustomTextField> {
     );
   }
 }
+
