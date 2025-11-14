@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:veritashop/view_models/color_view_model.dart';
-import 'package:veritashop/view_models/action_card_view_model.dart';
-import 'package:veritashop/view_models/review_view_model.dart';
-import 'package:veritashop/view_models/trending_topic_view_model.dart';
-import 'package:veritashop/view_models/insight_card_view_model.dart';
-import 'package:veritashop/screens/product_list_screen.dart';
+import '../../core/constants/app_colors.dart';
+import '../view_models/action_card_view_model.dart';
+import '../view_models/review_view_model.dart';
+import '../view_models/trending_topic_view_model.dart';
+import '../view_models/insight_card_view_model.dart';
+import 'product_list_screen.dart';
 
 //==============================================================================
 // LỚP CHÍNH CỦA MÀN HÌNH HOME
@@ -83,7 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
 
     _reviews = [
-      ReviewViewModel(
+      ReviewViewModel.fromParams(
         avatarUrl: 'https://i.pravatar.cc/150?img=1',
         name: 'Nguyễn Văn A',
         time: '2 phút trước',
@@ -95,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
         rating: 5.0,
         tag: 'Dịch vụ',
       ),
-      ReviewViewModel(
+      ReviewViewModel.fromParams(
         avatarUrl: 'https://i.pravatar.cc/150?img=5',
         name: 'Trần Thị B',
         time: '5 phút trước',
@@ -106,7 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
         rating: 3.0,
         tag: 'Sản phẩm',
       ),
-      ReviewViewModel(
+      ReviewViewModel.fromParams(
         avatarUrl: 'https://i.pravatar.cc/150?img=3',
         name: 'Lê Văn C',
         time: '8 phút trước',
@@ -272,7 +272,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _loadMoreComments() {
     setState(() {
       _reviews.add(
-        ReviewViewModel(
+        ReviewViewModel.fromParams(
           avatarUrl: 'https://i.pravatar.cc/150?img=7',
           name: 'Phạm Văn D',
           time: '12 phút trước',

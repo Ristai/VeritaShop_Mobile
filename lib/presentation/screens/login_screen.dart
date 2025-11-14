@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:veritashop/view_models/color_view_model.dart';
-import 'package:veritashop/widgets/custom_text_field.dart';
-import 'package:veritashop/widgets/custom_button.dart';
-import 'package:veritashop/screens/register_screen.dart';
-import 'package:veritashop/screens/product_list_screen.dart';
+import '../../core/constants/app_colors.dart';
+import '../widgets/custom_text_field.dart';
+import '../widgets/custom_button.dart';
+import 'register_screen.dart';
+import 'product_list_screen.dart';
 
 /// Màn hình đăng nhập - Welcome Portal
 class LoginScreen extends StatefulWidget {

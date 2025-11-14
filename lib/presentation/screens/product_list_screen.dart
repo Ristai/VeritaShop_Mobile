@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:veritashop/view_models/color_view_model.dart';
-import 'package:veritashop/view_models/product_view_model.dart';
-import 'package:veritashop/widgets/product_card.dart';
-import 'package:veritashop/screens/home_screen.dart';
+import '../../core/constants/app_colors.dart';
+import '../view_models/product_view_model.dart';
+import '../widgets/product_card.dart';
+import 'home_screen.dart';
 
 /// Màn hình danh sách sản phẩm - Shopping Hub
 class ProductListScreen extends StatefulWidget {
@@ -37,7 +37,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
   void _initializeProducts() {
     _allProducts = [
-      ProductViewModel(
+      ProductViewModel.fromParams(
         id: '1',
         name: 'iPhone 15 Pro Max',
         description: 'Điện thoại cao cấp với chip A17 Pro và camera 48MP',
@@ -52,7 +52,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
         createdAt: DateTime.now().subtract(const Duration(days: 1)),
         tags: ['Apple', 'Premium', 'Hot'],
       ),
-      ProductViewModel(
+      ProductViewModel.fromParams(
         id: '2',
         name: 'Samsung Galaxy S24 Ultra',
         description: 'Flagship Android với S Pen và màn hình Dynamic AMOLED',
@@ -67,7 +67,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
         createdAt: DateTime.now().subtract(const Duration(days: 2)),
         tags: ['Samsung', 'Android'],
       ),
-      ProductViewModel(
+      ProductViewModel.fromParams(
         id: '3',
         name: 'MacBook Pro 14" M3',
         description: 'Laptop chuyên nghiệp với chip M3 mạnh mẽ',
@@ -82,7 +82,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
         createdAt: DateTime.now().subtract(const Duration(days: 3)),
         tags: ['Apple', 'Premium', 'Laptop'],
       ),
-      ProductViewModel(
+      ProductViewModel.fromParams(
         id: '4',
         name: 'Sony WH-1000XM5',
         description: 'Tai nghe chống ồn hàng đầu thế giới',
@@ -96,7 +96,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
         createdAt: DateTime.now().subtract(const Duration(days: 5)),
         tags: ['Sony', 'Audio', 'Premium'],
       ),
-      ProductViewModel(
+      ProductViewModel.fromParams(
         id: '5',
         name: 'iPad Pro 12.9" M2',
         description: 'Máy tính bảng cao cấp với chip M2',
@@ -110,7 +110,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
         createdAt: DateTime.now().subtract(const Duration(days: 7)),
         tags: ['Apple', 'Tablet'],
       ),
-      ProductViewModel(
+      ProductViewModel.fromParams(
         id: '6',
         name: 'Apple Watch Series 9',
         description: 'Đồng hồ thông minh với chip S9 và Always-On display',
@@ -124,7 +124,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
         createdAt: DateTime.now().subtract(const Duration(days: 10)),
         tags: ['Apple', 'Smartwatch'],
       ),
-      ProductViewModel(
+      ProductViewModel.fromParams(
         id: '7',
         name: 'Dell XPS 15',
         description: 'Laptop Windows cao cấp với màn hình OLED',
@@ -138,7 +138,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
         createdAt: DateTime.now().subtract(const Duration(days: 12)),
         tags: ['Dell', 'Windows', 'OLED'],
       ),
-      ProductViewModel(
+      ProductViewModel.fromParams(
         id: '8',
         name: 'AirPods Pro 2',
         description: 'Tai nghe True Wireless với chống ồn chủ động',
