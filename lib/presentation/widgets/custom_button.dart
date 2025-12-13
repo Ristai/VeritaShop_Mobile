@@ -24,6 +24,7 @@ class CustomButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     final bool isDisabled = onPressed == null || isLoading;
 
     return SizedBox(
@@ -32,16 +33,16 @@ class CustomButton extends StatelessWidget {
       child: ElevatedButton(
         onPressed: isDisabled ? null : onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: isPrimary ? kAccentColor : kCardColor,
-          foregroundColor: isPrimary ? Colors.white : kPrimaryTextColor,
+          backgroundColor: isPrimary ? kAccentColor : colors.card,
+          foregroundColor: isPrimary ? Colors.white : colors.primaryText,
           disabledBackgroundColor:
-              isPrimary ? kAccentColor.withOpacity(0.5) : kBorderColor,
+              isPrimary ? kAccentColor.withValues(alpha: 0.5) : colors.border,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
             side: isPrimary
                 ? BorderSide.none
-                : const BorderSide(color: kBorderColor),
+                : BorderSide(color: colors.border),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         ),
@@ -69,7 +70,7 @@ class CustomButton extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: isPrimary ? Colors.white : kPrimaryTextColor,
+                      color: isPrimary ? Colors.white : colors.primaryText,
                     ),
                   ),
                 ],

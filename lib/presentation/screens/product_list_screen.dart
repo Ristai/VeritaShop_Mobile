@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../view_models/product_view_model.dart';
+import '../view_models/cart_view_model.dart';
+import '../view_models/search_history_view_model.dart';
 import '../widgets/product_card.dart';
+import '../widgets/skeleton_loading.dart';
+import '../widgets/search_history_overlay.dart';
 import 'home_screen.dart';
+import 'cart_screen.dart';
+import 'product_detail_screen.dart';
 
 /// Màn hình danh sách sản phẩm - Shopping Hub
 class ProductListScreen extends StatefulWidget {
@@ -14,10 +21,15 @@ class ProductListScreen extends StatefulWidget {
 
 class _ProductListScreenState extends State<ProductListScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+  final LayerLink _layerLink = LayerLink();
+  OverlayEntry? _overlayEntry;
+  
   String _searchQuery = '';
   String _selectedCategory = 'Tất cả';
   String _sortBy = 'Mới nhất';
   bool _isGridView = true;
+  bool _isLoading = true;
 
   late List<ProductViewModel> _allProducts;
   late List<ProductViewModel> _filteredProducts;
@@ -27,12 +39,83 @@ class _ProductListScreenState extends State<ProductListScreen> {
     super.initState();
     _initializeProducts();
     _filteredProducts = _allProducts;
+    _searchFocusNode.addListener(_onSearchFocusChange);
+    
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    });
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _searchFocusNode.removeListener(_onSearchFocusChange);
+    _searchFocusNode.dispose();
+    _removeOverlay();
     super.dispose();
+  }
+
+  void _onSearchFocusChange() {
+    if (_searchFocusNode.hasFocus) {
+      _showOverlay();
+    } else {
+      Future.delayed(const Duration(milliseconds: 200), _removeOverlay);
+    }
+  }
+
+  void _showOverlay() {
+    _removeOverlay();
+    _overlayEntry = _createOverlayEntry();
+    Overlay.of(context).insert(_overlayEntry!);
+  }
+
+  void _removeOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+  }
+
+  OverlayEntry _createOverlayEntry() {
+    final renderBox = context.findRenderObject() as RenderBox;
+    final size = renderBox.size;
+
+    return OverlayEntry(
+      builder: (context) => Positioned(
+        width: size.width - 32,
+        child: CompositedTransformFollower(
+          link: _layerLink,
+          showWhenUnlinked: false,
+          offset: const Offset(0, 56),
+          child: Material(
+            color: Colors.transparent,
+            child: Consumer<SearchHistoryViewModel>(
+              builder: (context, searchHistoryVM, _) {
+                return SearchHistoryOverlay(
+                  searchHistory: searchHistoryVM.searchHistory,
+                  suggestions: searchHistoryVM.getSuggestions(_searchQuery),
+                  currentQuery: _searchQuery,
+                  onItemTap: (query) {
+                    _searchController.text = query;
+                    _handleSearch(query);
+                    _searchFocusNode.unfocus();
+                  },
+                  onRemove: (query) {
+                    searchHistoryVM.removeSearch(query);
+                    _overlayEntry?.markNeedsBuild();
+                  },
+                  onClearAll: () {
+                    searchHistoryVM.clearHistory();
+                    _overlayEntry?.markNeedsBuild();
+                  },
+                  onClose: _removeOverlay,
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   void _initializeProducts() {
@@ -198,6 +281,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
   void _handleSearch(String query) {
     setState(() => _searchQuery = query);
     _applyFilters();
+    _overlayEntry?.markNeedsBuild();
+    
+    if (query.trim().isNotEmpty) {
+      context.read<SearchHistoryViewModel>().addSearch(query.trim());
+    }
   }
 
   void _selectCategory(String category) {
@@ -211,166 +299,59 @@ class _ProductListScreenState extends State<ProductListScreen> {
     _applyFilters();
   }
 
-  void _addToCart(ProductViewModel product) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Đã thêm "${product.name}" vào giỏ hàng'),
-        backgroundColor: kGreenColor,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+  Future<void> _addToCart(ProductViewModel product) async {
+    try {
+      final cartViewModel = context.read<CartViewModel>();
+      final success = await cartViewModel.addToCart(
+        productId: product.id,
+        quantity: 1,
+      );
+      
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Đã thêm "${product.name}" vào giỏ hàng'),
+            backgroundColor: kGreenColor,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+            action: SnackBarAction(
+              label: 'Xem giỏ hàng',
+              textColor: Colors.white,
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const CartScreen(),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Không thể thêm sản phẩm vào giỏ hàng'),
+            backgroundColor: kRedColor,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Lỗi: ${e.toString()}'),
+          backgroundColor: kRedColor,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   void _showProductDetail(ProductViewModel product) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: kCardColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        expand: false,
-        builder: (context, scrollController) {
-          return SingleChildScrollView(
-            controller: scrollController,
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: kBorderColor,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    product.imageUrl,
-                    height: 200,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  product.category,
-                  style: const TextStyle(
-                    color: kSecondaryTextColor,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  product.name,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Icon(Icons.star, color: kYellowColor, size: 20),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${product.rating}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      ' (${product.reviewCount} đánh giá)',
-                      style: const TextStyle(color: kSecondaryTextColor),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  product.formattedPrice,
-                  style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: kAccentColor,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: product.stockStatusColor.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: product.stockStatusColor),
-                  ),
-                  child: Text(
-                    product.stockStatusText,
-                    style: TextStyle(
-                      color: product.stockStatusColor,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Mô tả sản phẩm',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  product.description,
-                  style: const TextStyle(
-                    color: kSecondaryTextColor,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                if (product.isInStock)
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _addToCart(product);
-                      },
-                      icon: const Icon(Icons.shopping_cart),
-                      label: const Text('Thêm vào giỏ hàng'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: kAccentColor,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  )
-                else
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: null,
-                      style: ElevatedButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text('Hết hàng'),
-                    ),
-                  ),
-              ],
-            ),
-          );
-        },
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProductDetailScreen(product: product),
       ),
     );
   }
@@ -385,8 +366,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Scaffold(
-      backgroundColor: kBackgroundColor,
+      backgroundColor: colors.background,
       appBar: _buildAppBar(),
       body: Column(
         children: [
@@ -397,11 +379,13 @@ class _ProductListScreenState extends State<ProductListScreen> {
             child: RefreshIndicator(
               onRefresh: _handleRefresh,
               color: kAccentColor,
-              child: _filteredProducts.isEmpty
-                  ? _buildEmptyState()
-                  : _isGridView
-                      ? _buildProductGrid()
-                      : _buildProductList(),
+              child: _isLoading
+                  ? ProductListSkeleton(isGrid: _isGridView)
+                  : _filteredProducts.isEmpty
+                      ? _buildEmptyState()
+                      : _isGridView
+                          ? _buildProductGrid()
+                          : _buildProductList(),
             ),
           ),
         ],
@@ -411,14 +395,15 @@ class _ProductListScreenState extends State<ProductListScreen> {
   }
 
   PreferredSizeWidget _buildAppBar() {
+    final colors = AppColors.of(context);
     return AppBar(
-      backgroundColor: kBackgroundColor,
+      backgroundColor: colors.background,
       elevation: 0,
       automaticallyImplyLeading: false,
       leading: Padding(
         padding: const EdgeInsets.all(8),
         child: CircleAvatar(
-          backgroundColor: kCardColor,
+          backgroundColor: colors.card,
           child: const Icon(Icons.person, color: kAccentColor, size: 20),
         ),
       ),
@@ -431,7 +416,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
           ),
           Text(
             '${_filteredProducts.length} items',
-            style: const TextStyle(fontSize: 12, color: kSecondaryTextColor),
+            style: TextStyle(fontSize: 12, color: colors.secondaryText),
           ),
         ],
       ),
@@ -443,8 +428,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
         IconButton(
           icon: const Icon(Icons.shopping_cart_outlined),
           onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Giỏ hàng trống')),
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const CartScreen(),
+              ),
             );
           },
         ),
@@ -468,40 +455,51 @@ class _ProductListScreenState extends State<ProductListScreen> {
   }
 
   Widget _buildSearchBar() {
+    final colors = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: const BoxDecoration(
-        color: kBackgroundColor,
-        border: Border(bottom: BorderSide(color: kBorderColor)),
+      decoration: BoxDecoration(
+        color: colors.background,
+        border: Border(bottom: BorderSide(color: colors.border)),
       ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: kCardColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: kBorderColor),
-        ),
-        child: TextField(
-          controller: _searchController,
-          onChanged: _handleSearch,
-          style: const TextStyle(color: kPrimaryTextColor),
-          decoration: InputDecoration(
-            hintText: 'Tìm kiếm sản phẩm...',
-            hintStyle: const TextStyle(color: kSecondaryTextColor),
-            prefixIcon:
-                const Icon(Icons.search, color: kSecondaryTextColor, size: 20),
-            suffixIcon: _searchQuery.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.clear,
-                        color: kSecondaryTextColor, size: 20),
-                    onPressed: () {
-                      _searchController.clear();
-                      _handleSearch('');
-                    },
-                  )
-                : null,
-            border: InputBorder.none,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: CompositedTransformTarget(
+        link: _layerLink,
+        child: Container(
+          decoration: BoxDecoration(
+            color: colors.card,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: colors.border),
+          ),
+          child: TextField(
+            controller: _searchController,
+            focusNode: _searchFocusNode,
+            onChanged: _handleSearch,
+            onSubmitted: (value) {
+              if (value.trim().isNotEmpty) {
+                context.read<SearchHistoryViewModel>().addSearch(value.trim());
+              }
+              _searchFocusNode.unfocus();
+            },
+            style: TextStyle(color: colors.primaryText),
+            decoration: InputDecoration(
+              hintText: 'Tìm kiếm sản phẩm...',
+              hintStyle: TextStyle(color: colors.secondaryText),
+              prefixIcon:
+                  Icon(Icons.search, color: colors.secondaryText, size: 20),
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? IconButton(
+                      icon: Icon(Icons.clear,
+                          color: colors.secondaryText, size: 20),
+                      onPressed: () {
+                        _searchController.clear();
+                        _handleSearch('');
+                      },
+                    )
+                  : null,
+              border: InputBorder.none,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            ),
           ),
         ),
       ),
@@ -509,12 +507,13 @@ class _ProductListScreenState extends State<ProductListScreen> {
   }
 
   Widget _buildCategoryChips() {
+    final colors = AppColors.of(context);
     return Container(
       height: 48,
       padding: const EdgeInsets.symmetric(vertical: 8),
-      decoration: const BoxDecoration(
-        color: kBackgroundColor,
-        border: Border(bottom: BorderSide(color: kBorderColor)),
+      decoration: BoxDecoration(
+        color: colors.background,
+        border: Border(bottom: BorderSide(color: colors.border)),
       ),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
@@ -529,15 +528,15 @@ class _ProductListScreenState extends State<ProductListScreen> {
               label: Text(category),
               selected: isSelected,
               onSelected: (_) => _selectCategory(category),
-              backgroundColor: kCardColor,
+              backgroundColor: colors.card,
               selectedColor: kAccentColor,
               labelStyle: TextStyle(
-                color: isSelected ? Colors.white : kPrimaryTextColor,
+                color: isSelected ? Colors.white : colors.primaryText,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 fontSize: 13,
               ),
               side: BorderSide(
-                color: isSelected ? kAccentColor : kBorderColor,
+                color: isSelected ? kAccentColor : colors.border,
               ),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             ),
@@ -548,37 +547,38 @@ class _ProductListScreenState extends State<ProductListScreen> {
   }
 
   Widget _buildFilterBar() {
+    final colors = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: const BoxDecoration(
-        color: kCardColor,
-        border: Border(bottom: BorderSide(color: kBorderColor)),
+      decoration: BoxDecoration(
+        color: colors.card,
+        border: Border(bottom: BorderSide(color: colors.border)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.tune, color: kSecondaryTextColor, size: 18),
+          Icon(Icons.tune, color: colors.secondaryText, size: 18),
           const SizedBox(width: 8),
           Text(
             '${_filteredProducts.length} kết quả',
-            style: const TextStyle(color: kSecondaryTextColor, fontSize: 13),
+            style: TextStyle(color: colors.secondaryText, fontSize: 13),
           ),
           const Spacer(),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: kBackgroundColor,
+              color: colors.background,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: kBorderColor),
+              border: Border.all(color: colors.border),
             ),
             child: DropdownButton<String>(
               value: _sortBy,
               onChanged: _handleSort,
               underline: const SizedBox.shrink(),
               isDense: true,
-              icon: const Icon(Icons.arrow_drop_down,
-                  size: 18, color: kSecondaryTextColor),
-              style: const TextStyle(fontSize: 13, color: kPrimaryTextColor),
-              dropdownColor: kCardColor,
+              icon: Icon(Icons.arrow_drop_down,
+                  size: 18, color: colors.secondaryText),
+              style: TextStyle(fontSize: 13, color: colors.primaryText),
+              dropdownColor: colors.card,
               items: [
                 'Mới nhất',
                 'Giá: Thấp - Cao',
@@ -635,6 +635,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
   }
 
   Widget _buildEmptyState() {
+    final colors = AppColors.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -642,12 +643,12 @@ class _ProductListScreenState extends State<ProductListScreen> {
           Icon(
             Icons.search_off,
             size: 80,
-            color: kSecondaryTextColor.withValues(alpha: 0.5),
+            color: colors.secondaryText.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Không tìm thấy sản phẩm',
-            style: TextStyle(fontSize: 18, color: kSecondaryTextColor),
+            style: TextStyle(fontSize: 18, color: colors.secondaryText),
           ),
         ],
       ),
@@ -655,10 +656,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
   }
 
   Widget _buildBottomNav() {
+    final colors = AppColors.of(context);
     return Container(
-      decoration: const BoxDecoration(
-        color: kCardColor,
-        border: Border(top: BorderSide(color: kBorderColor)),
+      decoration: BoxDecoration(
+        color: colors.card,
+        border: Border(top: BorderSide(color: colors.border)),
       ),
       child: BottomNavigationBar(
         currentIndex: 0,
@@ -669,9 +671,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
             );
           }
         },
-        backgroundColor: kCardColor,
+        backgroundColor: colors.card,
         selectedItemColor: kAccentColor,
-        unselectedItemColor: kSecondaryTextColor,
+        unselectedItemColor: colors.secondaryText,
         type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(

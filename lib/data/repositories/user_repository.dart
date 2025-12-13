@@ -1,12 +1,8 @@
 import '../models/user_model.dart';
-import '../data_sources/local/mock_data_source.dart';
 
 /// Repository xử lý logic nghiệp vụ cho người dùng
 class UserRepository {
-  final MockDataSource _dataSource;
-
-  UserRepository({MockDataSource? dataSource})
-      : _dataSource = dataSource ?? MockDataSource();
+  UserRepository();
 
   /// Đăng nhập
   Future<UserModel?> login(String email, String password) async {

@@ -4,7 +4,11 @@ import '../view_models/action_card_view_model.dart';
 import '../view_models/review_view_model.dart';
 import '../view_models/trending_topic_view_model.dart';
 import '../view_models/insight_card_view_model.dart';
+import '../widgets/custom_switch.dart';
 import 'product_list_screen.dart';
+import 'analytics_screen.dart';
+import 'comments_screen.dart';
+import 'settings_screen.dart';
 
 //==============================================================================
 // LỚP CHÍNH CỦA MÀN HÌNH HOME
@@ -212,9 +216,6 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _selectedIndex = index;
     });
-    _showSnackBar(
-      'Chuyển tab sang ${['Trang chủ', 'Phân tích', 'Bình luận', 'Cài đặt'][index]}',
-    );
   }
 
   /// Hàm tiện ích để hiển thị một SnackBar (thanh thông báo ngắn)
@@ -228,10 +229,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Mở một Bottom Sheet (bảng tùy chọn từ dưới lên)
   void _openDetailsSheet(String title, String body) {
+    final colors = AppColors.of(context);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: kCardColor,
+      backgroundColor: colors.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -255,7 +257,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(body, style: const TextStyle(color: kSecondaryTextColor)),
+              Text(body, style: TextStyle(color: colors.secondaryText)),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () => Navigator.of(ctx).pop(),
@@ -310,13 +312,35 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: _buildAppBar(),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+      body: _buildBody(),
+      bottomNavigationBar: _buildBottomNavigationBar(),
+    );
+  }
+
+  Widget _buildBody() {
+    switch (_selectedIndex) {
+      case 0:
+        return _buildHomeContent();
+      case 1:
+        return const AnalyticsScreen();
+      case 2:
+        return const CommentsScreen();
+      case 3:
+        return const SettingsScreen();
+      default:
+        return _buildHomeContent();
+    }
+  }
+
+  Widget _buildHomeContent() {
+    final colors = AppColors.of(context);
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
               // MARK: - Trung tâm hành động (từ anh6.png)
               _SectionHeader(
                 title: 'Trung tâm hành động',
@@ -377,7 +401,7 @@ class _HomeScreenState extends State<HomeScreen> {
               _SectionHeader(title: 'Hệ thống đánh giá AI'),
               Text(
                 'Phân tích mức độ hài lòng của khách hàng tự động',
-                style: TextStyle(color: kSecondaryTextColor),
+                style: TextStyle(color: colors.secondaryText),
               ),
               const SizedBox(height: 16),
               const Row(
@@ -459,7 +483,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Center(
                 child: ElevatedButton(
                   onPressed: _loadMoreComments,
-                  style: ElevatedButton.styleFrom(backgroundColor: kCardColor),
+                  style: ElevatedButton.styleFrom(backgroundColor: colors.card),
                   child: const Text('Xem thêm bình luận'),
                 ),
               ),
@@ -474,14 +498,14 @@ class _HomeScreenState extends State<HomeScreen> {
               Container(
                 height: 150,
                 decoration: BoxDecoration(
-                  color: kCardColor,
+                  color: colors.card,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: kBorderColor),
+                  border: Border.all(color: colors.border),
                 ),
                 child: Center(
                   child: Text(
                     'Biểu đồ phân bổ cảm xúc • $_selectedRange',
-                    style: const TextStyle(color: kSecondaryTextColor),
+                    style: TextStyle(color: colors.secondaryText),
                   ),
                 ),
               ),
@@ -516,9 +540,9 @@ class _HomeScreenState extends State<HomeScreen> {
               // MARK: - Hiệu suất AI Model (từ anh3.png)
               _SectionHeader(
                 title: 'Hiệu suất AI Model',
-                actionWidget: const Icon(
+                actionWidget: Icon(
                   Icons.settings,
-                  color: kSecondaryTextColor,
+                  color: colors.secondaryText,
                 ),
               ),
               const _AiModelPerformanceCard(
@@ -599,9 +623,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
               _SectionHeader(
                 title: 'Cài đặt nhanh',
-                actionWidget: const Icon(
+                actionWidget: Icon(
                   Icons.settings,
-                  color: kSecondaryTextColor,
+                  color: colors.secondaryText,
                 ),
               ),
               _SettingToggleCard(
@@ -630,28 +654,31 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Trang chủ'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.analytics_outlined),
-            label: 'Phân tích',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.comment_outlined),
-            label: 'Bình luận',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Cài đặt'),
-        ],
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        backgroundColor: kCardColor,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: kAccentColor,
-        unselectedItemColor: kSecondaryTextColor,
-        showUnselectedLabels: true,
-      ),
+      );
+  }
+
+  Widget _buildBottomNavigationBar() {
+    final colors = AppColors.of(context);
+    return BottomNavigationBar(
+      items: const <BottomNavigationBarItem>[
+        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Trang chủ'),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.analytics_outlined),
+          label: 'Phân tích',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.comment_outlined),
+          label: 'Bình luận',
+        ),
+        BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Cài đặt'),
+      ],
+      currentIndex: _selectedIndex,
+      onTap: _onItemTapped,
+      backgroundColor: colors.card,
+      type: BottomNavigationBarType.fixed,
+      selectedItemColor: kAccentColor,
+      unselectedItemColor: colors.secondaryText,
+      showUnselectedLabels: true,
     );
   }
 
@@ -661,26 +688,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Xây dựng AppBar của màn hình
   AppBar _buildAppBar() {
+    final colors = AppColors.of(context);
     return AppBar(
-      backgroundColor: kBackgroundColor,
+      backgroundColor: colors.background,
       elevation: 0,
-      leading: const Padding(
-        padding: EdgeInsets.all(8.0),
+      leading: Padding(
+        padding: const EdgeInsets.all(8.0),
         child: CircleAvatar(
-          backgroundColor: kCardColor,
-          child: Icon(Icons.android),
+          backgroundColor: colors.card,
+          child: const Icon(Icons.android),
         ),
       ),
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text(
+        children: [
+          const Text(
             'AI Review',
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
           ),
           Text(
             'Sentiment Analysis',
-            style: TextStyle(fontSize: 12, color: kSecondaryTextColor),
+            style: TextStyle(fontSize: 12, color: colors.secondaryText),
           ),
         ],
       ),
@@ -735,21 +763,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Xây dựng nút Dropdown để chọn khoảng thời gian
   Widget _buildDropdownButton() {
+    final colors = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
-        color: kCardColor,
+        color: colors.card,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: kBorderColor),
+        border: Border.all(color: colors.border),
       ),
       child: DropdownButton<String>(
         value: _selectedRange,
         onChanged: _onSelectRange,
         underline: const SizedBox.shrink(),
         isDense: true,
-        icon: const Icon(Icons.keyboard_arrow_down, color: kSecondaryTextColor),
-        dropdownColor: kCardColor,
-        style: const TextStyle(color: kPrimaryTextColor),
+        icon: Icon(Icons.keyboard_arrow_down, color: colors.secondaryText),
+        dropdownColor: colors.card,
+        style: TextStyle(color: colors.primaryText),
         items: ['7 ngày qua', '30 ngày qua', '90 ngày qua']
             .map((range) => DropdownMenuItem(value: range, child: Text(range)))
             .toList(),
@@ -759,11 +788,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Xây dựng nút Cập nhật
   Widget _buildUpdateButton() {
+    final colors = AppColors.of(context);
     return ElevatedButton(
       onPressed: () => _showSnackBar('Đang cập nhật...'),
       style: ElevatedButton.styleFrom(
-        backgroundColor: kBorderColor,
-        foregroundColor: kPrimaryTextColor,
+        backgroundColor: colors.border,
+        foregroundColor: colors.primaryText,
       ),
       child: const Text('Cập nhật'),
     );
@@ -801,12 +831,13 @@ class _InfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: kCardColor,
+        color: colors.card,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: kBorderColor, width: 1),
+        border: Border.all(color: colors.border, width: 1),
       ),
       child: child,
     );
@@ -827,11 +858,12 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return ElevatedButton(
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
-        backgroundColor: isPrimary ? kRedColor.withOpacity(0.9) : kBorderColor,
-        foregroundColor: kPrimaryTextColor,
+        backgroundColor: isPrimary ? kRedColor.withValues(alpha: 0.9) : colors.border,
+        foregroundColor: colors.primaryText,
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
@@ -858,6 +890,7 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
@@ -897,14 +930,14 @@ class _SectionHeader extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: kCardColor,
+                color: colors.card,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: kBorderColor),
+                border: Border.all(color: colors.border),
               ),
               child: Text(
                 actionText!,
-                style: const TextStyle(
-                  color: kSecondaryTextColor,
+                style: TextStyle(
+                  color: colors.secondaryText,
                   fontSize: 12,
                 ),
               ),
@@ -924,6 +957,7 @@ class _ActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return _InfoCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -951,7 +985,7 @@ class _ActionCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             data.description,
-            style: const TextStyle(color: kSecondaryTextColor, fontSize: 13),
+            style: TextStyle(color: colors.secondaryText, fontSize: 13),
           ),
           const SizedBox(height: 16),
           Row(children: buttons),
@@ -974,6 +1008,7 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return _InfoCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -985,13 +1020,13 @@ class _StatCard extends StatelessWidget {
                 label.contains('bình luận')
                     ? Icons.chat_bubble_outline
                     : Icons.show_chart,
-                color: kSecondaryTextColor,
+                color: colors.secondaryText,
                 size: 24,
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: kGreenColor.withOpacity(0.1),
+                  color: kGreenColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -1010,7 +1045,7 @@ class _StatCard extends StatelessWidget {
             value,
             style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
           ),
-          Text(label, style: const TextStyle(color: kSecondaryTextColor)),
+          Text(label, style: TextStyle(color: colors.secondaryText)),
         ],
       ),
     );
@@ -1023,6 +1058,7 @@ class _RealtimeAnalysisCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return _InfoCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1036,23 +1072,24 @@ class _RealtimeAnalysisCard extends StatelessWidget {
               ),
               IconButton(
                 onPressed: () {},
-                icon: const Icon(
+                icon: Icon(
                   Icons.refresh,
-                  color: kSecondaryTextColor,
+                  color: colors.secondaryText,
                   size: 20,
                 ),
               ),
             ],
           ),
-          _buildSentimentBar('Tích cực', 75, kGreenColor),
-          _buildSentimentBar('Trung tính', 20, kYellowColor),
-          _buildSentimentBar('Tiêu cực', 5, kRedColor),
+          _buildSentimentBar(context, 'Tích cực', 75, kGreenColor),
+          _buildSentimentBar(context, 'Trung tính', 20, kYellowColor),
+          _buildSentimentBar(context, 'Tiêu cực', 5, kRedColor),
         ],
       ),
     );
   }
 
-  Widget _buildSentimentBar(String label, int value, Color color) {
+  Widget _buildSentimentBar(BuildContext context, String label, int value, Color color) {
+    final colors = AppColors.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
@@ -1061,7 +1098,7 @@ class _RealtimeAnalysisCard extends StatelessWidget {
             width: 80,
             child: Text(
               label,
-              style: const TextStyle(color: kSecondaryTextColor),
+              style: TextStyle(color: colors.secondaryText),
             ),
           ),
           Expanded(
@@ -1069,7 +1106,7 @@ class _RealtimeAnalysisCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
               child: LinearProgressIndicator(
                 value: value / 100,
-                backgroundColor: kBorderColor,
+                backgroundColor: colors.border,
                 color: color,
                 minHeight: 8,
               ),
@@ -1111,6 +1148,7 @@ class _AiToolCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return _InfoCard(
       child: Column(
         children: [
@@ -1119,7 +1157,7 @@ class _AiToolCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: kPurpleColor.withOpacity(0.2),
+                  color: kPurpleColor.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, color: kPurpleColor),
@@ -1135,8 +1173,8 @@ class _AiToolCard extends StatelessWidget {
                     ),
                     Text(
                       subtitle,
-                      style: const TextStyle(
-                        color: kSecondaryTextColor,
+                      style: TextStyle(
+                        color: colors.secondaryText,
                         fontSize: 12,
                       ),
                     ),
@@ -1146,7 +1184,7 @@ class _AiToolCard extends StatelessWidget {
               Text(
                 statusText,
                 style: TextStyle(
-                  color: statusColor ?? kSecondaryTextColor,
+                  color: statusColor ?? colors.secondaryText,
                   fontSize: 12,
                 ),
               ),
@@ -1170,8 +1208,8 @@ class _AiToolCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     statusValue ?? '',
-                    style: const TextStyle(
-                      color: kSecondaryTextColor,
+                    style: TextStyle(
+                      color: colors.secondaryText,
                       fontSize: 12,
                     ),
                   ),
@@ -1193,8 +1231,8 @@ class _AiToolCard extends StatelessWidget {
                           ),
                           Text(
                             entry.key,
-                            style: const TextStyle(
-                              color: kSecondaryTextColor,
+                            style: TextStyle(
+                              color: colors.secondaryText,
                               fontSize: 12,
                             ),
                           ),
@@ -1229,6 +1267,7 @@ class _AutoScoringCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return _InfoCard(
       child: Row(
         children: [
@@ -1246,9 +1285,9 @@ class _AutoScoringCard extends StatelessWidget {
                   'Chấm điểm tự động',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
-                const Text(
+                Text(
                   'Đánh giá mức độ hài lòng',
-                  style: TextStyle(fontSize: 12, color: kSecondaryTextColor),
+                  style: TextStyle(fontSize: 12, color: colors.secondaryText),
                 ),
                 const SizedBox(height: 4),
                 Row(
@@ -1263,11 +1302,11 @@ class _AutoScoringCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     const Text('4.3/5.0', style: TextStyle(fontSize: 12)),
-                    const Text(
+                    Text(
                       ' (2,847 đánh giá)',
                       style: TextStyle(
                         fontSize: 12,
-                        color: kSecondaryTextColor,
+                        color: colors.secondaryText,
                       ),
                     ),
                   ],
@@ -1275,10 +1314,10 @@ class _AutoScoringCard extends StatelessWidget {
               ],
             ),
           ),
-          const Icon(
+          Icon(
             Icons.arrow_forward_ios,
             size: 16,
-            color: kSecondaryTextColor,
+            color: colors.secondaryText,
           ),
         ],
       ),
@@ -1295,6 +1334,7 @@ class _ReviewFeedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return _InfoCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1313,9 +1353,9 @@ class _ReviewFeedCard extends StatelessWidget {
                     ),
                     Text(
                       review.time,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: kSecondaryTextColor,
+                        color: colors.secondaryText,
                       ),
                     ),
                   ],
@@ -1342,9 +1382,9 @@ class _ReviewFeedCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             '"${review.reviewText}"',
-            style: const TextStyle(
+            style: TextStyle(
               fontStyle: FontStyle.italic,
-              color: kPrimaryTextColor,
+              color: colors.primaryText,
             ),
           ),
           const SizedBox(height: 12),
@@ -1387,6 +1427,7 @@ class _SentimentBreakdownCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Expanded(
       child: _InfoCard(
         child: Column(
@@ -1404,7 +1445,7 @@ class _SentimentBreakdownCard extends StatelessWidget {
             Text(label),
             Text(
               '$count bình luận',
-              style: const TextStyle(fontSize: 12, color: kSecondaryTextColor),
+              style: TextStyle(fontSize: 12, color: colors.secondaryText),
             ),
           ],
         ),
@@ -1440,7 +1481,7 @@ class _AiModelPerformanceCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.2),
+                  color: statusColor.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -1455,13 +1496,14 @@ class _AiModelPerformanceCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          ...metrics.entries.map((e) => _buildMetricBar(e.key, e.value)),
+          ...metrics.entries.map((e) => _buildMetricBar(context, e.key, e.value)),
         ],
       ),
     );
   }
 
-  Widget _buildMetricBar(String label, double value) {
+  Widget _buildMetricBar(BuildContext context, String label, double value) {
+    final colors = AppColors.of(context);
     final bool isTime = label.contains('Tốc độ');
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
@@ -1471,7 +1513,7 @@ class _AiModelPerformanceCard extends StatelessWidget {
             width: 140,
             child: Text(
               label,
-              style: const TextStyle(color: kSecondaryTextColor),
+              style: TextStyle(color: colors.secondaryText),
             ),
           ),
           Expanded(
@@ -1480,7 +1522,7 @@ class _AiModelPerformanceCard extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: isTime ? 1 - (value / 2) : value / 100,
                 color: isTime ? kPurpleColor : kAccentColor,
-                backgroundColor: kBorderColor,
+                backgroundColor: colors.border,
                 minHeight: 8,
               ),
             ),
@@ -1507,6 +1549,7 @@ class _TrendingTopicCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -1528,7 +1571,7 @@ class _TrendingTopicCard extends StatelessWidget {
                 ),
                 Text(
                   topic.mentions,
-                  style: const TextStyle(color: kSecondaryTextColor),
+                  style: TextStyle(color: colors.secondaryText),
                 ),
               ],
             ),
@@ -1546,7 +1589,7 @@ class _TrendingTopicCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   topic.sentiment,
-                  style: const TextStyle(color: kSecondaryTextColor),
+                  style: TextStyle(color: colors.secondaryText),
                 ),
                 const Spacer(),
                 Icon(topic.statusIcon, color: topic.statusColor, size: 16),
@@ -1573,6 +1616,7 @@ class _InsightCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -1583,7 +1627,7 @@ class _InsightCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: insight.iconColor.withOpacity(0.1),
+                color: insight.iconColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(insight.icon, color: insight.iconColor),
@@ -1600,7 +1644,7 @@ class _InsightCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     insight.description,
-                    style: const TextStyle(color: kSecondaryTextColor),
+                    style: TextStyle(color: colors.secondaryText),
                   ),
                   const SizedBox(height: 8),
                   Row(
@@ -1626,8 +1670,8 @@ class _InsightCard extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         insight.info,
-                        style: const TextStyle(
-                          color: kSecondaryTextColor,
+                        style: TextStyle(
+                          color: colors.secondaryText,
                           fontSize: 12,
                         ),
                       ),
@@ -1678,6 +1722,7 @@ class _SummaryGridItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.center,
@@ -1688,7 +1733,7 @@ class _SummaryGridItem extends StatelessWidget {
         ),
         Text(
           label,
-          style: const TextStyle(color: kSecondaryTextColor, fontSize: 13),
+          style: TextStyle(color: colors.secondaryText, fontSize: 13),
         ),
       ],
     );
@@ -1713,11 +1758,12 @@ class _SettingToggleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return _InfoCard(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          Icon(icon, color: kSecondaryTextColor),
+          Icon(icon, color: colors.secondaryText),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -1726,15 +1772,15 @@ class _SettingToggleCard extends StatelessWidget {
                 Text(title),
                 Text(
                   subtitle,
-                  style: const TextStyle(
-                    color: kSecondaryTextColor,
+                  style: TextStyle(
+                    color: colors.secondaryText,
                     fontSize: 12,
                   ),
                 ),
               ],
             ),
           ),
-          Switch(value: value, onChanged: onChanged, activeColor: kAccentColor),
+          CustomSwitch(value: value, onChanged: onChanged),
         ],
       ),
     );

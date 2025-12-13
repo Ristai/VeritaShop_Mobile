@@ -17,13 +17,14 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: kCardColor,
+          color: colors.card,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: kBorderColor),
+          border: Border.all(color: colors.border),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -44,11 +45,11 @@ class ProductCard extends StatelessWidget {
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
                         height: 120,
-                        color: kBorderColor,
-                        child: const Icon(
+                        color: colors.border,
+                        child: Icon(
                           Icons.image_not_supported,
                           size: 50,
-                          color: kSecondaryTextColor,
+                          color: colors.secondaryText,
                         ),
                       );
                     },
@@ -88,7 +89,7 @@ class ProductCard extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: product.stockStatusColor.withOpacity(0.9),
+                      color: product.stockStatusColor.withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
@@ -117,9 +118,9 @@ class ProductCard extends StatelessWidget {
                   // Danh mục
                   Text(
                     product.category,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 10,
-                      color: kSecondaryTextColor,
+                      color: colors.secondaryText,
                       fontWeight: FontWeight.w500,
                     ),
                     maxLines: 1,
@@ -129,10 +130,10 @@ class ProductCard extends StatelessWidget {
                   // Tên sản phẩm
                   Text(
                     product.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: kPrimaryTextColor,
+                      color: colors.primaryText,
                       height: 1.2,
                     ),
                     maxLines: 2,
@@ -157,9 +158,9 @@ class ProductCard extends StatelessWidget {
                       ),
                       Text(
                         ' (${product.reviewCount})',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 10,
-                          color: kSecondaryTextColor,
+                          color: colors.secondaryText,
                         ),
                       ),
                     ],

@@ -77,5 +77,25 @@ class ProductModel {
       tags: tags ?? this.tags,
     );
   }
+
+  /// Create ProductModel từ Map (để sử dụng với API responses)
+  factory ProductModel.fromMap(Map<String, dynamic> map) {
+    return ProductModel(
+      id: map['id'] ?? '',
+      name: map['name'] ?? '',
+      description: map['description'] ?? '',
+      price: (map['price'] ?? 0).toDouble(),
+      imageUrl: map['image_url'] ?? map['imageUrl'] ?? '',
+      category: map['category'] ?? '',
+      rating: (map['rating'] ?? 0).toDouble(),
+      reviewCount: map['review_count'] ?? map['reviewCount'] ?? 0,
+      stock: map['stock'] ?? 0,
+      isFeatured: map['is_featured'] ?? map['isFeatured'] ?? false,
+      createdAt: map['created_at'] != null 
+          ? DateTime.parse(map['created_at']) 
+          : DateTime.now(),
+      tags: List<String>.from(map['tags'] ?? []),
+    );
+  }
 }
 

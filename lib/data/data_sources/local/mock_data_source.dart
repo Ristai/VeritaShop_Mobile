@@ -1,6 +1,5 @@
 import '../../models/product_model.dart';
 import '../../models/review_model.dart';
-import '../../models/user_model.dart';
 import '../../models/trending_topic_model.dart';
 import '../../models/action_card_model.dart';
 import '../../models/insight_card_model.dart';

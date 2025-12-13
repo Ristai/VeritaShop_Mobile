@@ -85,10 +85,11 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _handleForgotPassword() {
+    final colors = AppColors.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: kCardColor,
+        backgroundColor: colors.card,
         title: const Text('Quên mật khẩu'),
         content: const Text(
           'Tính năng đặt lại mật khẩu sẽ được cập nhật sớm. Vui lòng liên hệ admin để được hỗ trợ.',
@@ -105,8 +106,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Scaffold(
-      backgroundColor: kBackgroundColor,
+      backgroundColor: colors.background,
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
@@ -146,6 +148,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildHeroBanner() {
+    final colors = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -154,31 +157,31 @@ class _LoginScreenState extends State<LoginScreen> {
           end: Alignment.bottomRight,
           colors: [
             kAccentColor.withValues(alpha: 0.2),
-            kCardColor,
+            colors.card,
           ],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: kBorderColor),
+        border: Border.all(color: colors.border),
       ),
-      child: const Column(
+      child: Column(
         children: [
-          Icon(Icons.shopping_bag, size: 56, color: kAccentColor),
-          SizedBox(height: 12),
+          const Icon(Icons.shopping_bag, size: 56, color: kAccentColor),
+          const SizedBox(height: 12),
           Text(
             'Chào mừng đến VeritaShop',
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: kPrimaryTextColor,
+              color: colors.primaryText,
             ),
             textAlign: TextAlign.center,
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
             'AI-Powered Shopping Platform',
             style: TextStyle(
               fontSize: 14,
-              color: kSecondaryTextColor,
+              color: colors.secondaryText,
             ),
             textAlign: TextAlign.center,
           ),
@@ -216,13 +219,14 @@ class _LoginScreenState extends State<LoginScreen> {
     required String value,
     required String label,
   }) {
+    final colors = AppColors.of(context);
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: kCardColor,
+          color: colors.card,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: kBorderColor),
+          border: Border.all(color: colors.border),
         ),
         child: Column(
           children: [
@@ -237,9 +241,9 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
-                color: kSecondaryTextColor,
+                color: colors.secondaryText,
               ),
             ),
           ],
@@ -249,12 +253,13 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildLoginFormCard() {
+    final colors = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: kCardColor,
+        color: colors.card,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: kBorderColor),
+        border: Border.all(color: colors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -339,24 +344,25 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildSocialLoginSection() {
+    final colors = AppColors.of(context);
     return Column(
       children: [
         Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           child: Row(
             children: [
-              const Expanded(child: Divider(color: kBorderColor)),
+              Expanded(child: Divider(color: colors.border)),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
                   'HOẶC',
                   style: TextStyle(
                     fontSize: 11,
-                    color: kSecondaryTextColor.withValues(alpha: 0.7),
+                    color: colors.secondaryText.withValues(alpha: 0.7),
                   ),
                 ),
               ),
-              const Expanded(child: Divider(color: kBorderColor)),
+              Expanded(child: Divider(color: colors.border)),
             ],
           ),
         ),
@@ -375,8 +381,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 icon: const Icon(Icons.g_mobiledata, size: 24),
                 label: const Text('Google'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: kPrimaryTextColor,
-                  side: const BorderSide(color: kBorderColor),
+                  foregroundColor: colors.primaryText,
+                  side: BorderSide(color: colors.border),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
@@ -394,8 +400,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 icon: const Icon(Icons.facebook, size: 20),
                 label: const Text('Facebook'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: kPrimaryTextColor,
-                  side: const BorderSide(color: kBorderColor),
+                  foregroundColor: colors.primaryText,
+                  side: BorderSide(color: colors.border),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
@@ -407,21 +413,22 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildRegisterCTA() {
+    final colors = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: kCardColor,
+        color: colors.card,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: kBorderColor),
+        border: Border.all(color: colors.border),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.person_add, color: kSecondaryTextColor, size: 18),
+          Icon(Icons.person_add, color: colors.secondaryText, size: 18),
           const SizedBox(width: 8),
-          const Text(
+          Text(
             'Chưa có tài khoản?',
-            style: TextStyle(color: kSecondaryTextColor),
+            style: TextStyle(color: colors.secondaryText),
           ),
           const SizedBox(width: 8),
           GestureDetector(

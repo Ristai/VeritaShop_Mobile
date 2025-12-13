@@ -18,5 +18,11 @@ abstract class ApiClient {
   
   // Insights endpoints
   Future<List<Map<String, dynamic>>> getInsights();
+  
+  // Các phương thức HTTP generic cho CRUD operations
+  Future<List<Map<String, dynamic>>> get(String endpoint);
+  Future<Map<String, dynamic>> post(String endpoint, {Map<String, dynamic>? data});
+  Future<Map<String, dynamic>> put(String endpoint, {Map<String, dynamic>? data});
+  Future<Map<String, dynamic>> delete(String endpoint);
 }
 
