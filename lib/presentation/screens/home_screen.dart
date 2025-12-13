@@ -9,6 +9,7 @@ import 'product_list_screen.dart';
 import 'analytics_screen.dart';
 import 'comments_screen.dart';
 import 'settings_screen.dart';
+import 'profile_screen.dart';
 
 //==============================================================================
 // LỚP CHÍNH CỦA MÀN HÌNH HOME
@@ -670,7 +671,7 @@ class _HomeScreenState extends State<HomeScreen> {
           icon: Icon(Icons.comment_outlined),
           label: 'Bình luận',
         ),
-        BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Cài đặt'),
+        BottomNavigationBarItem(icon: Icon(Icons.settings_outlined), label: 'Cài đặt'),
       ],
       currentIndex: _selectedIndex,
       onTap: _onItemTapped,
@@ -745,18 +746,9 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         IconButton(
           onPressed: () => _showSnackBar('Mở thông báo'),
-          icon: const Icon(Icons.notifications_outlined),
+          icon: const Icon(Icons.notifications_outlined, size: 26),
         ),
-        Padding(
-          padding: const EdgeInsets.only(right: 16.0),
-          child: GestureDetector(
-            onTap: () => _openDetailPage('Profile'),
-            child: const CircleAvatar(
-              radius: 18,
-              backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=12'),
-            ),
-          ),
-        ),
+        const SizedBox(width: 8),
       ],
     );
   }

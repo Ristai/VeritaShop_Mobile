@@ -23,10 +23,11 @@ class SearchHistoryOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     final items = currentQuery.isEmpty ? searchHistory : suggestions;
 
     if (items.isEmpty && currentQuery.isEmpty) {
-      return _buildEmptyState();
+      return _buildEmptyState(context);
     }
 
     return Container(
@@ -34,12 +35,12 @@ class SearchHistoryOverlay extends StatelessWidget {
         maxHeight: MediaQuery.of(context).size.height * 0.4,
       ),
       decoration: BoxDecoration(
-        color: kCardColor,
+        color: colors.card,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: kBorderColor),
+        border: Border.all(color: colors.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
+            color: Colors.black.withValues(alpha: 0.15),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -48,14 +49,14 @@ class SearchHistoryOverlay extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (currentQuery.isEmpty) _buildHeader(),
+          if (currentQuery.isEmpty) _buildHeader(context),
           Flexible(
             child: ListView.builder(
               shrinkWrap: true,
               padding: EdgeInsets.zero,
               itemCount: items.length,
               itemBuilder: (context, index) {
-                return _buildHistoryItem(items[index]);
+                return _buildHistoryItem(context, items[index]);
               },
             ),
           ),
@@ -64,24 +65,26 @@ class SearchHistoryOverlay extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
+    final colors = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: kBorderColor)),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: colors.border)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.history, size: 18, color: kSecondaryTextColor),
-              SizedBox(width: 8),
+              Icon(Icons.history, size: 18, color: colors.secondaryText),
+              const SizedBox(width: 8),
               Text(
                 'Tìm kiếm gần đây',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
+                  color: colors.primaryText,
                 ),
               ),
             ],
@@ -101,7 +104,8 @@ class SearchHistoryOverlay extends StatelessWidget {
     );
   }
 
-  Widget _buildHistoryItem(String item) {
+  Widget _buildHistoryItem(BuildContext context, String item) {
+    final colors = AppColors.of(context);
     return InkWell(
       onTap: () => onItemTap(item),
       child: Padding(
@@ -111,21 +115,21 @@ class SearchHistoryOverlay extends StatelessWidget {
             Icon(
               currentQuery.isEmpty ? Icons.history : Icons.search,
               size: 18,
-              color: kSecondaryTextColor,
+              color: colors.secondaryText,
             ),
             const SizedBox(width: 12),
             Expanded(
               child: currentQuery.isEmpty
-                  ? Text(item)
-                  : _buildHighlightedText(item),
+                  ? Text(item, style: TextStyle(color: colors.primaryText))
+                  : _buildHighlightedText(context, item),
             ),
             if (currentQuery.isEmpty)
               GestureDetector(
                 onTap: () => onRemove(item),
-                child: const Icon(
+                child: Icon(
                   Icons.close,
                   size: 18,
-                  color: kSecondaryTextColor,
+                  color: colors.secondaryText,
                 ),
               ),
           ],
@@ -134,18 +138,19 @@ class SearchHistoryOverlay extends StatelessWidget {
     );
   }
 
-  Widget _buildHighlightedText(String text) {
+  Widget _buildHighlightedText(BuildContext context, String text) {
+    final colors = AppColors.of(context);
     final lowerText = text.toLowerCase();
     final lowerQuery = currentQuery.toLowerCase();
     final index = lowerText.indexOf(lowerQuery);
 
     if (index == -1) {
-      return Text(text);
+      return Text(text, style: TextStyle(color: colors.primaryText));
     }
 
     return RichText(
       text: TextSpan(
-        style: const TextStyle(color: kPrimaryTextColor),
+        style: TextStyle(color: colors.primaryText),
         children: [
           TextSpan(text: text.substring(0, index)),
           TextSpan(
@@ -161,13 +166,14 @@ class SearchHistoryOverlay extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
+    final colors = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: kCardColor,
+        color: colors.card,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: kBorderColor),
+        border: Border.all(color: colors.border),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -175,12 +181,12 @@ class SearchHistoryOverlay extends StatelessWidget {
           Icon(
             Icons.search_off,
             size: 48,
-            color: kSecondaryTextColor.withValues(alpha: 0.5),
+            color: colors.secondaryText.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 12),
-          const Text(
+          Text(
             'Chưa có lịch sử tìm kiếm',
-            style: TextStyle(color: kSecondaryTextColor),
+            style: TextStyle(color: colors.secondaryText),
           ),
         ],
       ),
@@ -200,20 +206,22 @@ class PopularSearches extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
             children: [
-              Icon(Icons.trending_up, size: 18, color: kAccentColor),
-              SizedBox(width: 8),
+              const Icon(Icons.trending_up, size: 18, color: kAccentColor),
+              const SizedBox(width: 8),
               Text(
                 'Tìm kiếm phổ biến',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
+                  color: colors.primaryText,
                 ),
               ),
             ],
@@ -231,13 +239,13 @@ class PopularSearches extends StatelessWidget {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: kCardColor,
+                  color: colors.card,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: kBorderColor),
+                  border: Border.all(color: colors.border),
                 ),
                 child: Text(
                   search,
-                  style: const TextStyle(fontSize: 13),
+                  style: TextStyle(fontSize: 13, color: colors.primaryText),
                 ),
               ),
             );

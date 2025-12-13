@@ -84,14 +84,15 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Scaffold(
-      backgroundColor: kBackgroundColor,
+      backgroundColor: colors.background,
       appBar: AppBar(
-        backgroundColor: kBackgroundColor,
+        backgroundColor: colors.background,
         elevation: 0,
-        title: const Text('Viết đánh giá'),
+        title: Text('Viết đánh giá', style: TextStyle(color: colors.primaryText)),
         leading: IconButton(
-          icon: const Icon(Icons.close),
+          icon: Icon(Icons.close, color: colors.primaryText),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -100,13 +101,13 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildProductInfo(),
+            _buildProductInfo(colors),
             const SizedBox(height: 24),
-            _buildRatingSection(),
+            _buildRatingSection(colors),
             const SizedBox(height: 24),
-            _buildTagSection(),
+            _buildTagSection(colors),
             const SizedBox(height: 24),
-            _buildReviewInput(),
+            _buildReviewInput(colors),
             const SizedBox(height: 32),
             CustomButton(
               text: 'Gửi đánh giá',
@@ -119,13 +120,13 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
     );
   }
 
-  Widget _buildProductInfo() {
+  Widget _buildProductInfo(AppColors colors) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: kCardColor,
+        color: colors.card,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: kBorderColor),
+        border: Border.all(color: colors.border),
       ),
       child: Row(
         children: [
@@ -139,8 +140,8 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
               errorBuilder: (_, __, ___) => Container(
                 width: 60,
                 height: 60,
-                color: kBorderColor,
-                child: const Icon(Icons.image, color: kSecondaryTextColor),
+                color: colors.border,
+                child: Icon(Icons.image, color: colors.secondaryText),
               ),
             ),
           ),
@@ -151,18 +152,19 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
               children: [
                 Text(
                   widget.productName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
+                    color: colors.primaryText,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
-                const Text(
+                Text(
                   'Đánh giá sản phẩm này',
                   style: TextStyle(
-                    color: kSecondaryTextColor,
+                    color: colors.secondaryText,
                     fontSize: 13,
                   ),
                 ),
@@ -174,15 +176,16 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
     );
   }
 
-  Widget _buildRatingSection() {
+  Widget _buildRatingSection(AppColors colors) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Đánh giá của bạn',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
+            color: colors.primaryText,
           ),
         ),
         const SizedBox(height: 12),
@@ -241,15 +244,16 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
     return kGreenColor;
   }
 
-  Widget _buildTagSection() {
+  Widget _buildTagSection(AppColors colors) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Về khía cạnh nào?',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
+            color: colors.primaryText,
           ),
         ),
         const SizedBox(height: 12),
@@ -266,16 +270,16 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: isSelected ? kAccentColor : kCardColor,
+                  color: isSelected ? kAccentColor : colors.card,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: isSelected ? kAccentColor : kBorderColor,
+                    color: isSelected ? kAccentColor : colors.border,
                   ),
                 ),
                 child: Text(
                   tag,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : kPrimaryTextColor,
+                    color: isSelected ? Colors.white : colors.primaryText,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
@@ -287,35 +291,36 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
     );
   }
 
-  Widget _buildReviewInput() {
+  Widget _buildReviewInput(AppColors colors) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Nội dung đánh giá',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
+            color: colors.primaryText,
           ),
         ),
         const SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
-            color: kCardColor,
+            color: colors.card,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: kBorderColor),
+            border: Border.all(color: colors.border),
           ),
           child: TextField(
             controller: _reviewController,
             maxLines: 5,
             maxLength: 500,
-            style: const TextStyle(color: kPrimaryTextColor),
-            decoration: const InputDecoration(
+            style: TextStyle(color: colors.primaryText),
+            decoration: InputDecoration(
               hintText: 'Chia sẻ trải nghiệm của bạn về sản phẩm này...',
-              hintStyle: TextStyle(color: kSecondaryTextColor),
+              hintStyle: TextStyle(color: colors.secondaryText),
               border: InputBorder.none,
-              contentPadding: EdgeInsets.all(16),
-              counterStyle: TextStyle(color: kSecondaryTextColor),
+              contentPadding: const EdgeInsets.all(16),
+              counterStyle: TextStyle(color: colors.secondaryText),
             ),
           ),
         ),

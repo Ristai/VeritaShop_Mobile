@@ -24,12 +24,14 @@ class _WishlistScreenState extends State<WishlistScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Scaffold(
-      backgroundColor: kBackgroundColor,
+      backgroundColor: colors.background,
       appBar: AppBar(
-        backgroundColor: kBackgroundColor,
-        title: const Text('Yêu thích'),
+        backgroundColor: colors.background,
+        title: Text('Yêu thích', style: TextStyle(color: colors.primaryText)),
         elevation: 0,
+        iconTheme: IconThemeData(color: colors.primaryText),
         actions: [
           Consumer<WishlistViewModel>(
             builder: (context, wishlistViewModel, _) {
@@ -37,8 +39,8 @@ class _WishlistScreenState extends State<WishlistScreen> {
                 return const SizedBox.shrink();
               }
               return IconButton(
-                icon: const Icon(Icons.delete_outline),
-                onPressed: () => _showClearDialog(context, wishlistViewModel),
+                icon: Icon(Icons.delete_outline, color: colors.primaryText),
+                onPressed: () => _showClearDialog(context, wishlistViewModel, colors),
               );
             },
           ),
@@ -47,7 +49,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
       body: Consumer<WishlistViewModel>(
         builder: (context, wishlistViewModel, _) {
           if (wishlistViewModel.wishlistItems.isEmpty) {
-            return _buildEmptyState(context);
+            return _buildEmptyState(context, colors);
           }
 
           return RefreshIndicator(
@@ -58,7 +60,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
               itemCount: wishlistViewModel.wishlistItems.length,
               itemBuilder: (context, index) {
                 final product = wishlistViewModel.wishlistItems[index];
-                return _buildWishlistItem(context, product, wishlistViewModel);
+                return _buildWishlistItem(context, product, wishlistViewModel, colors);
               },
             ),
           );
@@ -67,7 +69,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
+  Widget _buildEmptyState(BuildContext context, AppColors colors) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -75,23 +77,21 @@ class _WishlistScreenState extends State<WishlistScreen> {
           Icon(
             Icons.favorite_border,
             size: 80,
-            color: kSecondaryTextColor.withValues(alpha: 0.5),
+            color: colors.secondaryText.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Chưa có sản phẩm yêu thích',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w500,
-              color: kSecondaryTextColor,
+              color: colors.secondaryText,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Thêm sản phẩm yêu thích để xem lại sau',
-            style: TextStyle(
-              color: kSecondaryTextColor,
-            ),
+            style: TextStyle(color: colors.secondaryText),
           ),
           const SizedBox(height: 24),
           ElevatedButton(
@@ -114,13 +114,14 @@ class _WishlistScreenState extends State<WishlistScreen> {
     BuildContext context,
     dynamic product,
     WishlistViewModel wishlistViewModel,
+    AppColors colors,
   ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: kCardColor,
+        color: colors.card,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: kBorderColor),
+        border: Border.all(color: colors.border),
       ),
       child: InkWell(
         onTap: () {
@@ -148,7 +149,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
                   placeholder: (context, url) => Container(
                     width: 100,
                     height: 100,
-                    color: kBackgroundColor,
+                    color: colors.background,
                     child: const Center(
                       child: CircularProgressIndicator(strokeWidth: 2),
                     ),
@@ -156,8 +157,8 @@ class _WishlistScreenState extends State<WishlistScreen> {
                   errorWidget: (context, url, error) => Container(
                     width: 100,
                     height: 100,
-                    color: kBackgroundColor,
-                    child: const Icon(Icons.image, color: kSecondaryTextColor),
+                    color: colors.background,
+                    child: Icon(Icons.image, color: colors.secondaryText),
                   ),
                 ),
               ),
@@ -168,9 +169,10 @@ class _WishlistScreenState extends State<WishlistScreen> {
                   children: [
                     Text(
                       product.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
+                        color: colors.primaryText,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -178,8 +180,8 @@ class _WishlistScreenState extends State<WishlistScreen> {
                     const SizedBox(height: 4),
                     Text(
                       product.category,
-                      style: const TextStyle(
-                        color: kSecondaryTextColor,
+                      style: TextStyle(
+                        color: colors.secondaryText,
                         fontSize: 12,
                       ),
                     ),
@@ -190,12 +192,12 @@ class _WishlistScreenState extends State<WishlistScreen> {
                         const SizedBox(width: 4),
                         Text(
                           '${product.rating}',
-                          style: const TextStyle(fontSize: 13),
+                          style: TextStyle(fontSize: 13, color: colors.primaryText),
                         ),
                         Text(
                           ' (${product.reviewCount})',
-                          style: const TextStyle(
-                            color: kSecondaryTextColor,
+                          style: TextStyle(
+                            color: colors.secondaryText,
                             fontSize: 12,
                           ),
                         ),
@@ -260,17 +262,17 @@ class _WishlistScreenState extends State<WishlistScreen> {
     );
   }
 
-  void _showClearDialog(BuildContext context, WishlistViewModel wishlistViewModel) {
+  void _showClearDialog(BuildContext context, WishlistViewModel wishlistViewModel, AppColors colors) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: kCardColor,
-        title: const Text('Xóa tất cả'),
-        content: const Text('Bạn có chắc muốn xóa tất cả sản phẩm yêu thích?'),
+        backgroundColor: colors.card,
+        title: Text('Xóa tất cả', style: TextStyle(color: colors.primaryText)),
+        content: Text('Bạn có chắc muốn xóa tất cả sản phẩm yêu thích?', style: TextStyle(color: colors.secondaryText)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy'),
+            child: Text('Hủy', style: TextStyle(color: colors.secondaryText)),
           ),
           TextButton(
             onPressed: () {

@@ -74,12 +74,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Scaffold(
-      backgroundColor: kBackgroundColor,
+      backgroundColor: colors.background,
       appBar: AppBar(
-        backgroundColor: kBackgroundColor,
-        title: const Text('Thanh toán'),
+        backgroundColor: colors.background,
+        title: Text('Thanh toán', style: TextStyle(color: colors.primaryText)),
         elevation: 0,
+        iconTheme: IconThemeData(color: colors.primaryText),
       ),
       body: Consumer2<CartViewModel, OrderViewModel>(
         builder: (context, cartViewModel, orderViewModel, _) {

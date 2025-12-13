@@ -118,12 +118,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _showTermsDialog() {
+    final colors = AppColors.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: kCardColor,
-        title: const Text('Điều khoản sử dụng'),
-        content: const SingleChildScrollView(
+        backgroundColor: colors.card,
+        title: Text('Điều khoản sử dụng', style: TextStyle(color: colors.primaryText)),
+        content: SingleChildScrollView(
           child: Text(
             'Đây là điều khoản sử dụng mẫu cho VeritaShop.\n\n'
             '1. Bạn phải từ 18 tuổi trở lên để sử dụng dịch vụ.\n'
@@ -132,7 +133,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             '4. Chúng tôi có quyền từ chối dịch vụ với bất kỳ ai.\n'
             '5. Các điều khoản có thể thay đổi mà không cần báo trước.\n\n'
             'Bằng việc đăng ký, bạn đồng ý với các điều khoản trên.',
-            style: TextStyle(color: kSecondaryTextColor),
+            style: TextStyle(color: colors.secondaryText),
           ),
         ),
         actions: [
@@ -147,18 +148,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Scaffold(
-      backgroundColor: kBackgroundColor,
+      backgroundColor: colors.background,
       appBar: AppBar(
-        backgroundColor: kBackgroundColor,
+        backgroundColor: colors.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: kPrimaryTextColor),
+          icon: Icon(Icons.arrow_back, color: colors.primaryText),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'Tạo tài khoản',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold, color: colors.primaryText),
         ),
       ),
       body: SafeArea(
@@ -171,23 +173,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Welcome Banner
-                  _buildWelcomeBanner(),
+                  _buildWelcomeBanner(colors),
                   const SizedBox(height: 24),
-
-                  // Benefits Row
-                  _buildBenefitsRow(),
+                  _buildBenefitsRow(colors),
                   const SizedBox(height: 24),
-
-                  // Registration Form Card
-                  _buildRegistrationFormCard(),
+                  _buildRegistrationFormCard(colors),
                   const SizedBox(height: 24),
-
-                  // Terms Card
-                  _buildTermsCard(),
+                  _buildTermsCard(colors),
                   const SizedBox(height: 24),
-
-                  // Submit Button
                   CustomButton(
                     text: 'Tạo tài khoản',
                     icon: Icons.check_circle,
@@ -197,9 +190,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     height: 56,
                   ),
                   const SizedBox(height: 16),
-
-                  // Back to Login
-                  _buildBackToLoginCard(),
+                  _buildBackToLoginCard(colors),
                   const SizedBox(height: 40),
                 ],
               ),
@@ -210,7 +201,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _buildWelcomeBanner() {
+  Widget _buildWelcomeBanner(AppColors colors) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -219,11 +210,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
           end: Alignment.bottomRight,
           colors: [
             kGreenColor.withValues(alpha: 0.15),
-            kCardColor,
+            colors.card,
           ],
         ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: kBorderColor),
+        border: Border.all(color: colors.border),
       ),
       child: Row(
         children: [
@@ -240,7 +231,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           ),
           const SizedBox(width: 16),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -249,14 +240,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
+                    color: colors.primaryText,
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
                   'Tạo tài khoản để trải nghiệm mua sắm tốt nhất',
                   style: TextStyle(
                     fontSize: 13,
-                    color: kSecondaryTextColor,
+                    color: colors.secondaryText,
                   ),
                 ),
               ],
@@ -267,25 +259,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _buildBenefitsRow() {
+  Widget _buildBenefitsRow(AppColors colors) {
     return Row(
       children: [
         _buildBenefitCard(
           icon: Icons.local_shipping,
           title: 'Miễn phí\nvận chuyển',
           color: kGreenColor,
+          colors: colors,
         ),
         const SizedBox(width: 12),
         _buildBenefitCard(
           icon: Icons.loyalty,
           title: 'Tích điểm\nthưởng',
           color: kYellowColor,
+          colors: colors,
         ),
         const SizedBox(width: 12),
         _buildBenefitCard(
           icon: Icons.notifications_active,
           title: 'Ưu đãi\nđặc biệt',
           color: kAccentColor,
+          colors: colors,
         ),
       ],
     );
@@ -295,14 +290,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
     required IconData icon,
     required String title,
     required Color color,
+    required AppColors colors,
   }) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
         decoration: BoxDecoration(
-          color: kCardColor,
+          color: colors.card,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: kBorderColor),
+          border: Border.all(color: colors.border),
         ),
         child: Column(
           children: [
@@ -311,10 +307,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 height: 1.3,
                 fontWeight: FontWeight.w600,
+                color: colors.primaryText,
               ),
             ),
           ],
@@ -323,13 +320,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _buildRegistrationFormCard() {
+  Widget _buildRegistrationFormCard(AppColors colors) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: kCardColor,
+        color: colors.card,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: kBorderColor),
+        border: Border.all(color: colors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -338,14 +335,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
             children: [
               const Icon(Icons.edit_outlined, color: kAccentColor, size: 20),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'Thông tin tài khoản',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: colors.primaryText),
               ),
             ],
           ),
           const SizedBox(height: 20),
-
           CustomTextField(
             controller: _nameController,
             label: 'Họ và tên',
@@ -354,7 +350,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
             validator: _validateName,
           ),
           const SizedBox(height: 16),
-
           CustomTextField(
             controller: _emailController,
             label: 'Email',
@@ -364,7 +359,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
             validator: _validateEmail,
           ),
           const SizedBox(height: 16),
-
           CustomTextField(
             controller: _passwordController,
             label: 'Mật khẩu',
@@ -374,7 +368,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
             validator: _validatePassword,
           ),
           const SizedBox(height: 16),
-
           CustomTextField(
             controller: _confirmPasswordController,
             label: 'Xác nhận mật khẩu',
@@ -388,13 +381,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _buildTermsCard() {
+  Widget _buildTermsCard(AppColors colors) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: kCardColor,
+        color: colors.card,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: kBorderColor),
+        border: Border.all(color: colors.border),
       ),
       child: Row(
         children: [
@@ -414,9 +407,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: GestureDetector(
               onTap: _showTermsDialog,
               child: RichText(
-                text: const TextSpan(
-                  style: TextStyle(fontSize: 13, color: kSecondaryTextColor),
-                  children: [
+                text: TextSpan(
+                  style: TextStyle(fontSize: 13, color: colors.secondaryText),
+                  children: const [
                     TextSpan(text: 'Tôi đồng ý với '),
                     TextSpan(
                       text: 'Điều khoản sử dụng',
@@ -437,22 +430,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _buildBackToLoginCard() {
+  Widget _buildBackToLoginCard(AppColors colors) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: kCardColor,
+        color: colors.card,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: kBorderColor),
+        border: Border.all(color: colors.border),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.arrow_back, color: kSecondaryTextColor, size: 16),
+          Icon(Icons.arrow_back, color: colors.secondaryText, size: 16),
           const SizedBox(width: 8),
-          const Text(
+          Text(
             'Đã có tài khoản?',
-            style: TextStyle(color: kSecondaryTextColor),
+            style: TextStyle(color: colors.secondaryText),
           ),
           const SizedBox(width: 8),
           GestureDetector(

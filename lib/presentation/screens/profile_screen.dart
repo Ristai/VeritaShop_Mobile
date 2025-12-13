@@ -29,12 +29,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: colors.card,
-        title: const Text('Đăng xuất'),
-        content: const Text('Bạn có chắc chắn muốn đăng xuất?'),
+        title: Text('Đăng xuất', style: TextStyle(color: colors.primaryText)),
+        content: Text('Bạn có chắc chắn muốn đăng xuất?', style: TextStyle(color: colors.secondaryText)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Hủy'),
+            child: Text('Hủy', style: TextStyle(color: colors.secondaryText)),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
@@ -210,6 +210,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required int count,
     required VoidCallback onTap,
   }) {
+    final colors = AppColors.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -225,16 +226,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 8),
           Text(
             '$count',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
+              color: colors.primaryText,
             ),
           ),
           Text(
             label,
             style: TextStyle(
               fontSize: 12,
-              color: AppColors.of(context).secondaryText,
+              color: colors.secondaryText,
             ),
           ),
         ],
@@ -309,7 +311,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final colors = AppColors.of(context);
     return ListTile(
       leading: Icon(icon, color: colors.secondaryText),
-      title: Text(title),
+      title: Text(title, style: TextStyle(color: colors.primaryText)),
       trailing: Icon(Icons.arrow_forward_ios, size: 16, color: colors.secondaryText),
       onTap: onTap,
     );
