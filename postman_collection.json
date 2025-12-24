@@ -1,0 +1,504 @@
+{
+  "info": {
+    "name": "VeritaShop API Tests",
+    "description": "Full API test collection for VeritaShop E-commerce",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "productId",
+      "value": ""
+    },
+    {
+      "key": "orderId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "1.1 Register",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/register",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"test@example.com\",\n  \"password\": \"123456\"\n}"
+            }
+          }
+        },
+        {
+          "name": "1.2 Login",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/login",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"123456\"\n}"
+            }
+          }
+        },
+        {
+          "name": "1.3 Get Me",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/auth/me",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          }
+        },
+        {
+          "name": "1.4 Forgot Password",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/forgot-password",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\"\n}"
+            }
+          }
+        },
+        {
+          "name": "1.5 Verify Reset Code",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/verify-reset-code",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"code\": \"ABC123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "1.6 Reset Password",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/reset-password",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"code\": \"ABC123\",\n  \"newPassword\": \"654321\"\n}"
+            }
+          }
+        },
+        {
+          "name": "1.7 Refresh Token",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/refresh",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "1.8 Logout",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/logout",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Products",
+      "item": [
+        {
+          "name": "2.1 Get All Products",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/products?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "2.2 Get Products with Filter",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/products?brand=iPhone&minPrice=10000000&maxPrice=30000000&sort=price_asc",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"],
+              "query": [
+                { "key": "brand", "value": "iPhone" },
+                { "key": "minPrice", "value": "10000000" },
+                { "key": "maxPrice", "value": "30000000" },
+                { "key": "sort", "value": "price_asc" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "2.3 Search Products",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/products/search?q=iPhone 15",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "search"],
+              "query": [
+                { "key": "q", "value": "iPhone 15" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "2.4 Get Product by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/products/{{productId}}"
+          }
+        },
+        {
+          "name": "2.5 Get Featured Products",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/products/featured?limit=5"
+          }
+        },
+        {
+          "name": "2.6 Get Brands",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/products/brands"
+          }
+        },
+        {
+          "name": "2.7 Get Products by Brand",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/products/brand/Samsung"
+          }
+        },
+        {
+          "name": "2.8 Get Related Products",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/products/{{productId}}/related"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Cart",
+      "item": [
+        {
+          "name": "3.1 Get Cart",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/cart",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          }
+        },
+        {
+          "name": "3.2 Add to Cart",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/cart",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 1,\n  \"color\": {\n    \"name\": \"Đen\",\n    \"code\": \"#000000\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "3.3 Update Cart Item",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/cart/{{cartItemId}}",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 2\n}"
+            }
+          }
+        },
+        {
+          "name": "3.4 Remove Cart Item",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/cart/{{cartItemId}}",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          }
+        },
+        {
+          "name": "3.5 Clear Cart",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/cart",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Coupons",
+      "item": [
+        {
+          "name": "4.1 Get Available Coupons",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/coupons",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          }
+        },
+        {
+          "name": "4.2 Apply Coupon",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/coupons/apply",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"WELCOME10\",\n  \"orderAmount\": 5000000\n}"
+            }
+          }
+        },
+        {
+          "name": "4.3 Get Coupon by Code",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/coupons/WELCOME10"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Orders",
+      "item": [
+        {
+          "name": "5.1 Create Order",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/orders",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shippingAddress\": {\n    \"fullName\": \"Nguyễn Văn A\",\n    \"phone\": \"0901234567\",\n    \"province\": \"TP. Hồ Chí Minh\",\n    \"district\": \"Quận 1\",\n    \"ward\": \"Phường Bến Nghé\",\n    \"streetAddress\": \"123 Lê Lợi\"\n  },\n  \"paymentMethod\": \"COD\",\n  \"note\": \"Giao giờ hành chính\",\n  \"couponCode\": \"WELCOME10\"\n}"
+            }
+          }
+        },
+        {
+          "name": "5.2 Get Orders",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/orders",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          }
+        },
+        {
+          "name": "5.3 Get Order by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/orders/{{orderId}}",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          }
+        },
+        {
+          "name": "5.4 Cancel Order",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/orders/{{orderId}}/cancel",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Đổi ý không muốn mua nữa\"\n}"
+            }
+          }
+        },
+        {
+          "name": "5.5 Reorder",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/orders/{{orderId}}/reorder",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Reviews",
+      "item": [
+        {
+          "name": "6.1 Get Product Reviews",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/reviews/product/{{productId}}"
+          }
+        },
+        {
+          "name": "6.2 Create Review",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/reviews",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"rating\": 5,\n  \"title\": \"Sản phẩm tuyệt vời\",\n  \"text\": \"Máy đẹp, pin trâu, camera chụp đẹp. Rất hài lòng!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "6.3 Get My Reviews",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/reviews/my-reviews",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          }
+        },
+        {
+          "name": "6.4 Like Review",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/reviews/{{reviewId}}/like",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. User Profile",
+      "item": [
+        {
+          "name": "7.1 Get Profile",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/users/profile",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          }
+        },
+        {
+          "name": "7.2 Update Profile",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/users/profile",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test User Updated\",\n  \"phone\": \"0987654321\"\n}"
+            }
+          }
+        },
+        {
+          "name": "7.3 Add Address",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/users/addresses",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Nguyễn Văn B\",\n  \"phone\": \"0912345678\",\n  \"province\": \"Hà Nội\",\n  \"district\": \"Cầu Giấy\",\n  \"ward\": \"Dịch Vọng\",\n  \"streetAddress\": \"456 Xuân Thủy\",\n  \"isDefault\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "7.4 Change Password",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/users/password",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"123456\",\n  \"newPassword\": \"newpass123\"\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

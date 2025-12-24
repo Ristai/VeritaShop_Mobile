@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/custom_button.dart';
+import '../view_models/auth_view_model.dart';
 import 'register_screen.dart';
 import 'product_list_screen.dart';
+import 'forgot_password_screen.dart';
 
 /// Màn hình đăng nhập - Welcome Portal
 class LoginScreen extends StatefulWidget {
@@ -17,7 +20,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _isLoading = false;
   bool _rememberMe = false;
 
   @override
@@ -53,27 +55,37 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    setState(() => _isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 1500));
-
+    final authViewModel = context.read<AuthViewModel>();
     final email = _emailController.text.trim();
-    setState(() => _isLoading = false);
+    final password = _passwordController.text;
+
+    final success = await authViewModel.login(email, password);
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Đăng nhập thành công! Xin chào $email'),
-        backgroundColor: kGreenColor,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Đăng nhập thành công! Xin chào ${authViewModel.currentUser?.name ?? email}'),
+          backgroundColor: kGreenColor,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
 
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (context) => const ProductListScreen(),
-      ),
-    );
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => const ProductListScreen(),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authViewModel.errorMessage ?? 'Đăng nhập thất bại'),
+          backgroundColor: kRedColor,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   void _navigateToRegister() {
@@ -85,21 +97,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _handleForgotPassword() {
-    final colors = AppColors.of(context);
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: colors.card,
-        title: const Text('Quên mật khẩu'),
-        content: const Text(
-          'Tính năng đặt lại mật khẩu sẽ được cập nhật sớm. Vui lòng liên hệ admin để được hỗ trợ.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Đóng'),
-          ),
-        ],
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const ForgotPasswordScreen(),
       ),
     );
   }
@@ -334,8 +334,8 @@ class _LoginScreenState extends State<LoginScreen> {
           CustomButton(
             text: 'Đăng nhập',
             icon: Icons.arrow_forward,
-            onPressed: _isLoading ? null : _handleLogin,
-            isLoading: _isLoading,
+            onPressed: context.watch<AuthViewModel>().isLoading ? null : _handleLogin,
+            isLoading: context.watch<AuthViewModel>().isLoading,
             width: double.infinity,
           ),
         ],

@@ -3,9 +3,13 @@ class CartModel {
   final String userId;
   final String productId;
   final String productName;
+  final String productBrand;
   final String productImageUrl;
   final double price;
+  final double? originalPrice;
   final int quantity;
+  final CartColor color;
+  final int stock;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -14,25 +18,90 @@ class CartModel {
     required this.userId,
     required this.productId,
     required this.productName,
+    this.productBrand = '',
     required this.productImageUrl,
     required this.price,
+    this.originalPrice,
     required this.quantity,
+    required this.color,
+    this.stock = 0,
     required this.createdAt,
     required this.updatedAt,
   });
 
-  /// Create CartModel từ Map
+  /// Create CartModel từ Map (legacy)
   factory CartModel.fromMap(Map<String, dynamic> map) {
     return CartModel(
       id: map['id'] ?? '',
       userId: map['user_id'] ?? '',
       productId: map['product_id'] ?? '',
       productName: map['product_name'] ?? '',
+      productBrand: map['product_brand'] ?? '',
       productImageUrl: map['product_image_url'] ?? '',
       price: (map['price'] ?? 0).toDouble(),
+      originalPrice: map['original_price']?.toDouble(),
       quantity: map['quantity'] ?? 1,
+      color: CartColor(name: map['color_name'] ?? '', code: map['color_code']),
+      stock: map['stock'] ?? 0,
       createdAt: DateTime.parse(map['created_at'] ?? DateTime.now().toIso8601String()),
       updatedAt: DateTime.parse(map['updated_at'] ?? DateTime.now().toIso8601String()),
+    );
+  }
+
+  /// Create CartModel từ API response
+  factory CartModel.fromApiMap(Map<String, dynamic> map) {
+    // Handle both cart item format and order item format
+    final product = map['product'];
+    final colorData = map['color'] ?? {};
+    
+    // If product is a Map (cart item), extract from it
+    // If product is a String (order item), use direct fields
+    String productId;
+    String productName;
+    String productBrand;
+    String productImageUrl;
+    double price;
+    double? originalPrice;
+    int stock;
+    
+    if (product is Map<String, dynamic>) {
+      // Cart item format: has nested product object
+      final images = product['images'] as List<dynamic>? ?? [];
+      productId = product['_id'] ?? product['id'] ?? '';
+      productName = product['name'] ?? '';
+      productBrand = product['brand'] ?? '';
+      productImageUrl = images.isNotEmpty ? images[0] : '';
+      price = (map['price'] ?? product['price'] ?? 0).toDouble();
+      originalPrice = product['originalPrice']?.toDouble();
+      stock = product['stock'] ?? 0;
+    } else {
+      // Order item format: direct fields
+      productId = map['product']?.toString() ?? map['productId'] ?? '';
+      productName = map['name'] ?? '';
+      productBrand = map['brand'] ?? '';
+      productImageUrl = map['image'] ?? '';
+      price = (map['price'] ?? 0).toDouble();
+      originalPrice = null;
+      stock = 0;
+    }
+    
+    return CartModel(
+      id: map['_id'] ?? map['id'] ?? '',
+      userId: '',
+      productId: productId,
+      productName: productName,
+      productBrand: productBrand,
+      productImageUrl: productImageUrl,
+      price: price,
+      originalPrice: originalPrice,
+      quantity: map['quantity'] ?? 1,
+      color: CartColor(
+        name: colorData['name'] ?? '',
+        code: colorData['code'],
+      ),
+      stock: stock,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
   }
 
@@ -43,9 +112,14 @@ class CartModel {
       'user_id': userId,
       'product_id': productId,
       'product_name': productName,
+      'product_brand': productBrand,
       'product_image_url': productImageUrl,
       'price': price,
+      'original_price': originalPrice,
       'quantity': quantity,
+      'color_name': color.name,
+      'color_code': color.code,
+      'stock': stock,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -57,9 +131,13 @@ class CartModel {
     String? userId,
     String? productId,
     String? productName,
+    String? productBrand,
     String? productImageUrl,
     double? price,
+    double? originalPrice,
     int? quantity,
+    CartColor? color,
+    int? stock,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -68,9 +146,13 @@ class CartModel {
       userId: userId ?? this.userId,
       productId: productId ?? this.productId,
       productName: productName ?? this.productName,
+      productBrand: productBrand ?? this.productBrand,
       productImageUrl: productImageUrl ?? this.productImageUrl,
       price: price ?? this.price,
+      originalPrice: originalPrice ?? this.originalPrice,
       quantity: quantity ?? this.quantity,
+      color: color ?? this.color,
+      stock: stock ?? this.stock,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -78,6 +160,16 @@ class CartModel {
 
   /// Tính tổng tiền cho item này
   double get totalPrice => price * quantity;
+}
+
+/// Color model for cart item
+class CartColor {
+  final String name;
+  final String? code;
+
+  CartColor({required this.name, this.code});
+
+  Map<String, dynamic> toMap() => {'name': name, 'code': code};
 }
 
 class CartSummary {

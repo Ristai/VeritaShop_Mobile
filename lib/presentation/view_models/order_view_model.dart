@@ -2,14 +2,25 @@ import 'package:flutter/material.dart';
 import '../../data/models/order_model.dart';
 import '../../data/models/address_model.dart';
 import '../../data/models/cart_model.dart';
+import '../../data/repositories/order_repository.dart';
+import '../../core/network/api_service.dart';
 
 class OrderViewModel extends ChangeNotifier {
-  final List<OrderModel> _orders = [];
-  final List<AddressModel> _addresses = [];
+  final OrderRepository _orderRepository;
+  final ApiService _apiService;
+
+  List<OrderModel> _orders = [];
+  List<AddressModel> _addresses = [];
   AddressModel? _selectedAddress;
   String _selectedPaymentMethod = 'COD';
   bool _isLoading = false;
   String? _errorMessage;
+
+  OrderViewModel({
+    OrderRepository? orderRepository,
+    ApiService? apiService,
+  })  : _orderRepository = orderRepository ?? OrderRepository(),
+        _apiService = apiService ?? ApiService.instance;
 
   List<OrderModel> get orders => List.unmodifiable(_orders);
   List<AddressModel> get addresses => List.unmodifiable(_addresses);
@@ -23,33 +34,37 @@ class OrderViewModel extends ChangeNotifier {
     'MoMo',
     'VNPay',
     'ZaloPay',
-    'Thẻ tín dụng/ghi nợ',
+    'Card',
   ];
 
   Future<void> loadAddresses() async {
     _setLoading(true);
     try {
-      await Future.delayed(const Duration(milliseconds: 500));
-      
-      if (_addresses.isEmpty) {
-        _addresses.add(AddressModel(
-          id: 'addr_1',
-          userId: 'demo_user',
-          fullName: 'Nguyễn Văn A',
-          phone: '0901234567',
-          province: 'TP. Hồ Chí Minh',
-          district: 'Quận 1',
-          ward: 'Phường Bến Nghé',
-          streetAddress: '123 Nguyễn Huệ',
-          isDefault: true,
+      final response = await _apiService.getProfile();
+      if (response['success'] == true && response['data'] != null) {
+        final userData = response['data'];
+        final List<dynamic> addressesData = userData['addresses'] ?? [];
+        
+        _addresses = addressesData.map((addr) => AddressModel(
+          id: addr['_id'] ?? addr['id'] ?? '',
+          userId: userData['_id'] ?? '',
+          fullName: addr['fullName'] ?? '',
+          phone: addr['phone'] ?? '',
+          province: addr['province'] ?? '',
+          district: addr['district'] ?? '',
+          ward: addr['ward'] ?? '',
+          streetAddress: addr['streetAddress'] ?? '',
+          isDefault: addr['isDefault'] ?? false,
           createdAt: DateTime.now(),
-        ));
+        )).toList();
+        
+        if (_addresses.isNotEmpty) {
+          _selectedAddress = _addresses.firstWhere(
+            (addr) => addr.isDefault,
+            orElse: () => _addresses.first,
+          );
+        }
       }
-      
-      _selectedAddress = _addresses.firstWhere(
-        (addr) => addr.isDefault,
-        orElse: () => _addresses.first,
-      );
     } catch (e) {
       _setError(e.toString());
     } finally {
@@ -60,9 +75,13 @@ class OrderViewModel extends ChangeNotifier {
   Future<void> loadOrders() async {
     _setLoading(true);
     try {
-      await Future.delayed(const Duration(milliseconds: 500));
+      print('OrderViewModel: Loading orders...');
+      final result = await _orderRepository.getOrders();
+      print('OrderViewModel: Got ${result.orders.length} orders');
+      _orders = result.orders;
       notifyListeners();
     } catch (e) {
+      print('OrderViewModel: Error loading orders: $e');
       _setError(e.toString());
     } finally {
       _setLoading(false);
@@ -82,22 +101,21 @@ class OrderViewModel extends ChangeNotifier {
   Future<bool> addAddress(AddressModel address) async {
     _setLoading(true);
     try {
-      await Future.delayed(const Duration(milliseconds: 300));
+      final response = await _apiService.addAddress({
+        'fullName': address.fullName,
+        'phone': address.phone,
+        'province': address.province,
+        'district': address.district,
+        'ward': address.ward,
+        'streetAddress': address.streetAddress,
+        'isDefault': address.isDefault,
+      });
       
-      if (address.isDefault) {
-        for (int i = 0; i < _addresses.length; i++) {
-          _addresses[i] = _addresses[i].copyWith(isDefault: false);
-        }
+      if (response['success'] == true) {
+        await loadAddresses();
+        return true;
       }
-      
-      _addresses.add(address);
-      
-      if (address.isDefault || _selectedAddress == null) {
-        _selectedAddress = address;
-      }
-      
-      notifyListeners();
-      return true;
+      return false;
     } catch (e) {
       _setError(e.toString());
       return false;
@@ -109,24 +127,21 @@ class OrderViewModel extends ChangeNotifier {
   Future<bool> updateAddress(AddressModel address) async {
     _setLoading(true);
     try {
-      await Future.delayed(const Duration(milliseconds: 300));
+      final response = await _apiService.updateAddress(address.id, {
+        'fullName': address.fullName,
+        'phone': address.phone,
+        'province': address.province,
+        'district': address.district,
+        'ward': address.ward,
+        'streetAddress': address.streetAddress,
+        'isDefault': address.isDefault,
+      });
       
-      final index = _addresses.indexWhere((a) => a.id == address.id);
-      if (index != -1) {
-        if (address.isDefault) {
-          for (int i = 0; i < _addresses.length; i++) {
-            _addresses[i] = _addresses[i].copyWith(isDefault: false);
-          }
-        }
-        _addresses[index] = address;
-        
-        if (_selectedAddress?.id == address.id) {
-          _selectedAddress = address;
-        }
+      if (response['success'] == true) {
+        await loadAddresses();
+        return true;
       }
-      
-      notifyListeners();
-      return true;
+      return false;
     } catch (e) {
       _setError(e.toString());
       return false;
@@ -138,16 +153,17 @@ class OrderViewModel extends ChangeNotifier {
   Future<bool> deleteAddress(String addressId) async {
     _setLoading(true);
     try {
-      await Future.delayed(const Duration(milliseconds: 300));
+      final response = await _apiService.deleteAddress(addressId);
       
-      _addresses.removeWhere((a) => a.id == addressId);
-      
-      if (_selectedAddress?.id == addressId) {
-        _selectedAddress = _addresses.isNotEmpty ? _addresses.first : null;
+      if (response['success'] == true) {
+        _addresses.removeWhere((a) => a.id == addressId);
+        if (_selectedAddress?.id == addressId) {
+          _selectedAddress = _addresses.isNotEmpty ? _addresses.first : null;
+        }
+        notifyListeners();
+        return true;
       }
-      
-      notifyListeners();
-      return true;
+      return false;
     } catch (e) {
       _setError(e.toString());
       return false;
@@ -159,6 +175,7 @@ class OrderViewModel extends ChangeNotifier {
   Future<OrderModel?> placeOrder({
     required CartSummary cartSummary,
     String? note,
+    String? couponCode,
   }) async {
     if (_selectedAddress == null) {
       _setError('Vui lòng chọn địa chỉ giao hàng');
@@ -167,20 +184,21 @@ class OrderViewModel extends ChangeNotifier {
 
     _setLoading(true);
     try {
-      await Future.delayed(const Duration(seconds: 1));
-      
-      final order = OrderModel.fromCartSummary(
-        id: 'ORD${DateTime.now().millisecondsSinceEpoch}',
-        userId: 'demo_user',
-        cartSummary: cartSummary,
+      final order = await _orderRepository.createOrder(
         shippingAddress: _selectedAddress!,
         paymentMethod: _selectedPaymentMethod,
         note: note,
+        couponCode: couponCode,
       );
       
-      _orders.insert(0, order);
-      notifyListeners();
-      return order;
+      if (order != null) {
+        _orders.insert(0, order);
+        notifyListeners();
+        return order;
+      }
+      
+      _setError('Đặt hàng thất bại');
+      return null;
     } catch (e) {
       _setError(e.toString());
       return null;
@@ -189,21 +207,36 @@ class OrderViewModel extends ChangeNotifier {
     }
   }
 
-  Future<bool> cancelOrder(String orderId) async {
+  Future<bool> cancelOrder(String orderId, {String? reason}) async {
     _setLoading(true);
     try {
-      await Future.delayed(const Duration(milliseconds: 500));
+      final success = await _orderRepository.cancelOrder(orderId, reason: reason);
       
-      final index = _orders.indexWhere((o) => o.id == orderId);
-      if (index != -1) {
-        _orders[index] = _orders[index].copyWith(
-          status: OrderStatus.cancelled,
-          updatedAt: DateTime.now(),
-        );
+      if (success) {
+        final index = _orders.indexWhere((o) => o.id == orderId);
+        if (index != -1) {
+          _orders[index] = _orders[index].copyWith(
+            status: OrderStatus.cancelled,
+            updatedAt: DateTime.now(),
+          );
+        }
+        notifyListeners();
       }
       
-      notifyListeners();
-      return true;
+      return success;
+    } catch (e) {
+      _setError(e.toString());
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<bool> reorder(String orderId) async {
+    _setLoading(true);
+    try {
+      final success = await _orderRepository.reorder(orderId);
+      return success;
     } catch (e) {
       _setError(e.toString());
       return false;

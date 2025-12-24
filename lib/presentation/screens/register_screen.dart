@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/custom_button.dart';
+import '../view_models/auth_view_model.dart';
 import 'product_list_screen.dart';
 
 /// Màn hình đăng ký - Onboarding Journey
@@ -18,7 +20,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  bool _isLoading = false;
   bool _acceptTerms = false;
 
   @override
@@ -93,28 +94,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 2));
-
+    final authViewModel = context.read<AuthViewModel>();
     final name = _nameController.text.trim();
-    setState(() => _isLoading = false);
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    final success = await authViewModel.register(name, email, password);
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Đăng ký thành công! Chào mừng $name'),
-        backgroundColor: kGreenColor,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Đăng ký thành công! Chào mừng $name'),
+          backgroundColor: kGreenColor,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
 
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(
-        builder: (context) => const ProductListScreen(),
-      ),
-      (route) => false,
-    );
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (context) => const ProductListScreen(),
+        ),
+        (route) => false,
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authViewModel.errorMessage ?? 'Đăng ký thất bại'),
+          backgroundColor: kRedColor,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   void _showTermsDialog() {
@@ -184,8 +196,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   CustomButton(
                     text: 'Tạo tài khoản',
                     icon: Icons.check_circle,
-                    onPressed: _isLoading ? null : _handleRegister,
-                    isLoading: _isLoading,
+                    onPressed: context.watch<AuthViewModel>().isLoading ? null : _handleRegister,
+                    isLoading: context.watch<AuthViewModel>().isLoading,
                     width: double.infinity,
                     height: 56,
                   ),

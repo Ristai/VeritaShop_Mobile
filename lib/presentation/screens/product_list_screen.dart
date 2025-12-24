@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../data/repositories/product_repository.dart';
 import '../view_models/product_view_model.dart';
 import '../view_models/cart_view_model.dart';
 import '../view_models/search_history_view_model.dart';
@@ -44,6 +45,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   final LayerLink _layerLink = LayerLink();
+  final ProductRepository _productRepository = ProductRepository();
   OverlayEntry? _overlayEntry;
   
   String _searchQuery = '';
@@ -52,21 +54,32 @@ class _ProductListScreenState extends State<ProductListScreen> {
   bool _isGridView = true;
   bool _isLoading = true;
 
-  late List<ProductViewModel> _allProducts;
-  late List<ProductViewModel> _filteredProducts;
+  List<ProductViewModel> _allProducts = [];
+  List<ProductViewModel> _filteredProducts = [];
 
   @override
   void initState() {
     super.initState();
-    _initializeProducts();
-    _filteredProducts = _allProducts;
+    _loadProducts();
     _searchFocusNode.addListener(_onSearchFocusChange);
-    
-    Future.delayed(const Duration(milliseconds: 800), () {
+  }
+
+  Future<void> _loadProducts() async {
+    setState(() => _isLoading = true);
+    try {
+      final result = await _productRepository.getAllProducts();
+      if (mounted) {
+        setState(() {
+          _allProducts = result.products.map((p) => ProductViewModel(product: p)).toList();
+          _filteredProducts = _allProducts;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
       }
-    });
+    }
   }
 
   @override
@@ -157,129 +170,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
     );
   }
 
-  void _initializeProducts() {
-    _allProducts = [
-      ProductViewModel.fromParams(
-        id: '1',
-        name: 'iPhone 15 Pro Max',
-        description: 'Điện thoại cao cấp với chip A17 Pro và camera 48MP',
-        price: 29990000,
-        imageUrl:
-            'https://images.unsplash.com/photo-1592286927505-c58ba6c3c10b?w=400',
-        category: 'Điện thoại',
-        rating: 4.8,
-        reviewCount: 234,
-        stock: 45,
-        isFeatured: true,
-        createdAt: DateTime.now().subtract(const Duration(days: 1)),
-        tags: ['Apple', 'Premium', 'Hot'],
-      ),
-      ProductViewModel.fromParams(
-        id: '2',
-        name: 'Samsung Galaxy S24 Ultra',
-        description: 'Flagship Android với S Pen và màn hình Dynamic AMOLED',
-        price: 26990000,
-        imageUrl:
-            'https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?w=400',
-        category: 'Điện thoại',
-        rating: 4.7,
-        reviewCount: 189,
-        stock: 32,
-        isFeatured: true,
-        createdAt: DateTime.now().subtract(const Duration(days: 2)),
-        tags: ['Samsung', 'Android'],
-      ),
-      ProductViewModel.fromParams(
-        id: '3',
-        name: 'MacBook Pro 14" M3',
-        description: 'Laptop chuyên nghiệp với chip M3 mạnh mẽ',
-        price: 49990000,
-        imageUrl:
-            'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400',
-        category: 'Laptop',
-        rating: 4.9,
-        reviewCount: 156,
-        stock: 18,
-        isFeatured: true,
-        createdAt: DateTime.now().subtract(const Duration(days: 3)),
-        tags: ['Apple', 'Premium', 'Laptop'],
-      ),
-      ProductViewModel.fromParams(
-        id: '4',
-        name: 'Sony WH-1000XM5',
-        description: 'Tai nghe chống ồn hàng đầu thế giới',
-        price: 8990000,
-        imageUrl:
-            'https://images.unsplash.com/photo-1545127398-14699f92334b?w=400',
-        category: 'Phụ kiện',
-        rating: 4.6,
-        reviewCount: 421,
-        stock: 67,
-        createdAt: DateTime.now().subtract(const Duration(days: 5)),
-        tags: ['Sony', 'Audio', 'Premium'],
-      ),
-      ProductViewModel.fromParams(
-        id: '5',
-        name: 'iPad Pro 12.9" M2',
-        description: 'Máy tính bảng cao cấp với chip M2',
-        price: 29990000,
-        imageUrl:
-            'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=400',
-        category: 'Tablet',
-        rating: 4.7,
-        reviewCount: 98,
-        stock: 8,
-        createdAt: DateTime.now().subtract(const Duration(days: 7)),
-        tags: ['Apple', 'Tablet'],
-      ),
-      ProductViewModel.fromParams(
-        id: '6',
-        name: 'Apple Watch Series 9',
-        description: 'Đồng hồ thông minh với chip S9 và Always-On display',
-        price: 10990000,
-        imageUrl:
-            'https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=400',
-        category: 'Phụ kiện',
-        rating: 4.5,
-        reviewCount: 267,
-        stock: 42,
-        createdAt: DateTime.now().subtract(const Duration(days: 10)),
-        tags: ['Apple', 'Smartwatch'],
-      ),
-      ProductViewModel.fromParams(
-        id: '7',
-        name: 'Dell XPS 15',
-        description: 'Laptop Windows cao cấp với màn hình OLED',
-        price: 45990000,
-        imageUrl:
-            'https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=400',
-        category: 'Laptop',
-        rating: 4.6,
-        reviewCount: 134,
-        stock: 0,
-        createdAt: DateTime.now().subtract(const Duration(days: 12)),
-        tags: ['Dell', 'Windows', 'OLED'],
-      ),
-      ProductViewModel.fromParams(
-        id: '8',
-        name: 'AirPods Pro 2',
-        description: 'Tai nghe True Wireless với chống ồn chủ động',
-        price: 6490000,
-        imageUrl:
-            'https://images.unsplash.com/photo-1606841837239-c5a1a4a07af7?w=400',
-        category: 'Phụ kiện',
-        rating: 4.8,
-        reviewCount: 512,
-        stock: 95,
-        isFeatured: true,
-        createdAt: DateTime.now().subtract(const Duration(days: 15)),
-        tags: ['Apple', 'Audio', 'Hot'],
-      ),
-    ];
-  }
-
   List<String> get _categories {
-    final categories = _allProducts.map((p) => p.category).toSet().toList();
+    // Use brand as category for phone products
+    final categories = _allProducts.map((p) => p.product.brand).toSet().toList();
     categories.insert(0, 'Tất cả');
     return categories;
   }
@@ -288,7 +181,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
     setState(() {
       _filteredProducts = _allProducts.where((product) {
         bool matchCategory = _selectedCategory == 'Tất cả' ||
-            product.category == _selectedCategory;
+            product.product.brand == _selectedCategory;
         bool matchSearch = _searchQuery.isEmpty ||
             product.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
             product.description
@@ -341,9 +234,13 @@ class _ProductListScreenState extends State<ProductListScreen> {
   Future<void> _addToCart(ProductViewModel product) async {
     try {
       final cartViewModel = context.read<CartViewModel>();
+      final defaultColor = product.colors.isNotEmpty 
+          ? product.colors.first.toMap() 
+          : {'name': 'Mặc định', 'hex': '#000000'};
       final success = await cartViewModel.addToCart(
         productId: product.id,
         quantity: 1,
+        color: defaultColor,
       );
       
       if (success) {
@@ -396,11 +293,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
   }
 
   Future<void> _handleRefresh() async {
-    await Future.delayed(const Duration(seconds: 1));
-    setState(() {
-      _initializeProducts();
-      _applyFilters();
-    });
+    await _loadProducts();
+    _applyFilters();
   }
 
   @override

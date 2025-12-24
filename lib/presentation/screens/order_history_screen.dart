@@ -119,7 +119,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        order.id,
+                        order.orderNumber.isNotEmpty ? order.orderNumber : order.id,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
@@ -247,8 +247,16 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                           style: TextStyle(color: kRedColor),
                         ),
                       ),
+                    if (order.status == OrderStatus.cancelled || order.status == OrderStatus.delivered)
+                      TextButton(
+                        onPressed: () => _handleReorder(order, orderViewModel),
+                        child: const Text(
+                          'Đặt lại',
+                          style: TextStyle(color: kGreenColor),
+                        ),
+                      ),
                     OutlinedButton(
-                      onPressed: () => _showOrderDetail(order, colors),
+                      onPressed: () => _showOrderDetail(order, orderViewModel, colors),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: kAccentColor,
                         side: const BorderSide(color: kAccentColor),
@@ -337,7 +345,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: colors.card,
         title: Text('Hủy đơn hàng', style: TextStyle(color: colors.primaryText)),
-        content: Text('Bạn có chắc muốn hủy đơn hàng ${order.id}?', style: TextStyle(color: colors.secondaryText)),
+        content: Text('Bạn có chắc muốn hủy đơn hàng ${order.orderNumber.isNotEmpty ? order.orderNumber : order.id}?', style: TextStyle(color: colors.secondaryText)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -363,7 +371,29 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     );
   }
 
-  void _showOrderDetail(OrderModel order, AppColors colors) {
+  Future<void> _handleReorder(OrderModel order, OrderViewModel orderViewModel) async {
+    final success = await orderViewModel.reorder(order.id);
+    if (mounted) {
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đã thêm sản phẩm vào giỏ hàng'),
+            backgroundColor: kGreenColor,
+          ),
+        );
+        Navigator.pushNamed(context, '/cart');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(orderViewModel.errorMessage ?? 'Không thể đặt lại đơn hàng'),
+            backgroundColor: kRedColor,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showOrderDetail(OrderModel order, OrderViewModel orderViewModel, AppColors colors) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -398,7 +428,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      order.id,
+                      order.orderNumber.isNotEmpty ? order.orderNumber : order.id,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -539,6 +569,42 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                     style: TextStyle(color: colors.secondaryText),
                   ),
                 ],
+                const SizedBox(height: 24),
+                // Action buttons
+                Row(
+                  children: [
+                    if (order.status == OrderStatus.pending)
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _showCancelDialog(order, orderViewModel, colors);
+                          },
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: kRedColor,
+                            side: const BorderSide(color: kRedColor),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: const Text('Hủy đơn hàng'),
+                        ),
+                      ),
+                    if (order.status == OrderStatus.cancelled || order.status == OrderStatus.delivered) ...[
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _handleReorder(order, orderViewModel);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: kAccentColor,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: const Text('Đặt lại đơn hàng', style: TextStyle(color: Colors.white)),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
                 const SizedBox(height: 40),
               ],
             ),
