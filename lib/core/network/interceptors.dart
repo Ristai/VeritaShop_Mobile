@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 
 /// Shared FlutterSecureStorage instance with web config
@@ -12,35 +13,76 @@ FlutterSecureStorage getSecureStorage() {
   );
 }
 
+/// Helper to read token - prefers SharedPreferences on web
+Future<String?> readToken(String key) async {
+  debugPrint('readToken: Reading key=$key, isWeb=$kIsWeb');
+  
+  // On web, prefer SharedPreferences for reliability
+  if (kIsWeb) {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final value = prefs.getString(key);
+      debugPrint('readToken: SharedPreferences value=${value != null ? "exists (${value.length} chars)" : "null"}');
+      if (value != null && value.isNotEmpty) return value;
+    } catch (e) {
+      debugPrint('readToken: SharedPreferences error: $e');
+    }
+  }
+  
+  // Fallback to secure storage
+  try {
+    final storage = getSecureStorage();
+    final value = await storage.read(key: key);
+    debugPrint('readToken: SecureStorage value=${value != null ? "exists" : "null"}');
+    return value;
+  } catch (e) {
+    debugPrint('SecureStorage read failed: $e');
+    return null;
+  }
+}
+
 /// Interceptor xử lý authentication token
 class AuthInterceptor extends Interceptor {
-  final FlutterSecureStorage _storage;
-
-  AuthInterceptor({FlutterSecureStorage? storage})
-      : _storage = storage ?? getSecureStorage();
+  AuthInterceptor();
 
   @override
   void onRequest(
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    // Các endpoint không cần token
+    // Các endpoint không cần token (exact match hoặc startsWith)
     final publicEndpoints = [
       '/auth/login',
       '/auth/register',
       '/auth/refresh',
-      '/products',
+      '/auth/forgot-password',
+      '/auth/reset-password',
+    ];
+
+    // Các prefix không cần token
+    final publicPrefixes = [
+      '/products',  // GET /products, /products/:id
       '/reviews/product',
     ];
 
-    final isPublic = publicEndpoints.any(
-      (endpoint) => options.path.contains(endpoint),
+    // Kiểm tra xem có phải endpoint admin không (admin luôn cần auth)
+    final isAdminEndpoint = options.path.startsWith('/admin');
+    
+    // Kiểm tra public endpoint
+    final isPublicExact = publicEndpoints.any(
+      (endpoint) => options.path == endpoint || options.path.startsWith('$endpoint?'),
     );
+    
+    final isPublicPrefix = !isAdminEndpoint && publicPrefixes.any(
+      (prefix) => options.path.startsWith(prefix),
+    );
+    
+    final isPublic = isPublicExact || isPublicPrefix;
 
     if (!isPublic) {
-      final token = await _storage.read(key: 'access_token');
+      final token = await readToken('access_token');
       if (kDebugMode) {
-        print('AuthInterceptor: Token = ${token != null ? "exists (${token.length} chars)" : "null"}');
+        print('AuthInterceptor: Path=${options.path}, Token=${token != null ? "exists" : "null"}');
       }
       if (token != null && token.isNotEmpty) {
         options.headers['Authorization'] = 'Bearer $token';
@@ -54,14 +96,11 @@ class AuthInterceptor extends Interceptor {
 /// Interceptor tự động refresh token khi hết hạn
 class RefreshTokenInterceptor extends Interceptor {
   final Dio _dio;
-  final FlutterSecureStorage _storage;
   bool _isRefreshing = false;
 
   RefreshTokenInterceptor({
     required Dio dio,
-    FlutterSecureStorage? storage,
-  })  : _dio = dio,
-        _storage = storage ?? getSecureStorage();
+  }) : _dio = dio;
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
@@ -72,7 +111,7 @@ class RefreshTokenInterceptor extends Interceptor {
         _isRefreshing = true;
 
         try {
-          final refreshToken = await _storage.read(key: 'refresh_token');
+          final refreshToken = await readToken('refresh_token');
           
           if (refreshToken != null) {
             // Call refresh endpoint
@@ -85,9 +124,9 @@ class RefreshTokenInterceptor extends Interceptor {
               final newAccessToken = response.data['data']['accessToken'];
               final newRefreshToken = response.data['data']['refreshToken'];
 
-              // Save new tokens
-              await _storage.write(key: 'access_token', value: newAccessToken);
-              await _storage.write(key: 'refresh_token', value: newRefreshToken);
+              // Save new tokens using SharedPreferences on web
+              await _saveToken('access_token', newAccessToken);
+              await _saveToken('refresh_token', newRefreshToken);
 
               // Retry original request
               final opts = err.requestOptions;
@@ -111,13 +150,38 @@ class RefreshTokenInterceptor extends Interceptor {
 
     handler.next(err);
   }
+  
+  Future<void> _saveToken(String key, String value) async {
+    if (kIsWeb) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(key, value);
+    }
+    try {
+      final storage = getSecureStorage();
+      await storage.write(key: key, value: value);
+    } catch (e) {
+      debugPrint('SecureStorage write failed: $e');
+    }
+  }
 
   Future<void> _clearTokens() async {
-    await _storage.delete(key: 'access_token');
-    await _storage.delete(key: 'refresh_token');
-    await _storage.delete(key: 'user_id');
-    await _storage.delete(key: 'user_name');
-    await _storage.delete(key: 'user_email');
+    final keys = ['access_token', 'refresh_token', 'user_id', 'user_name', 'user_email'];
+    
+    if (kIsWeb) {
+      final prefs = await SharedPreferences.getInstance();
+      for (final key in keys) {
+        await prefs.remove(key);
+      }
+    }
+    
+    try {
+      final storage = getSecureStorage();
+      for (final key in keys) {
+        await storage.delete(key: key);
+      }
+    } catch (e) {
+      debugPrint('SecureStorage delete failed: $e');
+    }
   }
 }
 

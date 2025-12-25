@@ -12,6 +12,7 @@ const orderRoutes = require('./routes/orderRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const couponRoutes = require('./routes/couponRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 
@@ -43,6 +44,7 @@ app.get('/api', (req, res) => {
       reviews: '/api/reviews',
       users: '/api/users',
       upload: '/api/upload',
+      admin: '/api/admin',
     }
   });
 });
@@ -56,6 +58,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/coupons', couponRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Error handling
 app.use(notFound);

@@ -2,6 +2,7 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const Coupon = require('../models/Coupon');
+const User = require('../models/User');
 
 const phones = [
   // iPhone
@@ -138,7 +139,7 @@ const phones = [
     price: 22990000,
     originalPrice: 26990000,
     images: [
-      'https://cdn2.cellphones.com.vn/insecure/rs:fill:358:358/q:90/plain/https://cellphones.com.vn/media/catalog/product/s/a/samsung-galaxy-s24-plus_1_.png',
+      'https://images.samsung.com/is/image/samsung/p6pim/vn/2401/gallery/vn-galaxy-s24-plus-s928-sm-s926bzkdxxv-thumb-539296067',
     ],
     specs: {
       ram: '12GB',
@@ -168,7 +169,7 @@ const phones = [
     price: 36990000,
     originalPrice: 40990000,
     images: [
-      'https://cdn2.cellphones.com.vn/insecure/rs:fill:358:358/q:90/plain/https://cellphones.com.vn/media/catalog/product/s/a/samsung-galaxy-z-fold-5_1__2.png',
+      'https://images.samsung.com/is/image/samsung/p6pim/vn/2307/gallery/vn-galaxy-z-fold5-f946-sm-f946bzkbxxv-thumb-537243782',
     ],
     specs: {
       ram: '12GB',
@@ -572,6 +573,21 @@ const seedProducts = async () => {
 
     const createdCoupons = await Coupon.insertMany(coupons);
     console.log(`Seeded ${createdCoupons.length} coupons`);
+
+    // Seed admin user
+    const existingAdmin = await User.findOne({ email: 'admin@veritashop.com' });
+    if (!existingAdmin) {
+      await User.create({
+        name: 'Admin VeritaShop',
+        email: 'admin@veritashop.com',
+        password: 'Admin@123',
+        role: 'admin',
+        isActive: true
+      });
+      console.log('Created admin user: admin@veritashop.com / Admin@123');
+    } else {
+      console.log('Admin user already exists');
+    }
 
     await mongoose.connection.close();
     console.log('\nDatabase seeded successfully!');

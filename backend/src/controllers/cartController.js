@@ -49,14 +49,23 @@ const addToCart = async (req, res, next) => {
       return errorResponse(res, 'Sản phẩm đã hết hàng', 400, 'OUT_OF_STOCK');
     }
 
-    // Validate color
-    if (!color || !color.name) {
-      return errorResponse(res, 'Vui lòng chọn màu sắc', 400, 'COLOR_REQUIRED');
-    }
-
-    const validColor = product.colors.find(c => c.name === color.name);
-    if (!validColor) {
-      return errorResponse(res, 'Màu sắc không hợp lệ', 400, 'INVALID_COLOR');
+    // Validate color - allow default if product has no colors
+    let selectedColor = { name: 'Mặc định', code: null };
+    
+    if (product.colors && product.colors.length > 0) {
+      // Product has colors - require valid selection
+      if (!color || !color.name) {
+        return errorResponse(res, 'Vui lòng chọn màu sắc', 400, 'COLOR_REQUIRED');
+      }
+      
+      const validColor = product.colors.find(c => c.name === color.name);
+      if (!validColor) {
+        return errorResponse(res, 'Màu sắc không hợp lệ', 400, 'INVALID_COLOR');
+      }
+      selectedColor = { name: validColor.name, code: validColor.code };
+    } else if (color && color.name) {
+      // No colors defined but user provided one - use it
+      selectedColor = { name: color.name, code: color.code || null };
     }
 
     // Get or create cart
@@ -67,7 +76,7 @@ const addToCart = async (req, res, next) => {
 
     // Check if product with same color already in cart
     const existingItemIndex = cart.items.findIndex(
-      item => item.product.toString() === productId && item.color.name === color.name
+      item => item.product.toString() === productId && item.color.name === selectedColor.name
     );
 
     if (existingItemIndex > -1) {
@@ -88,10 +97,7 @@ const addToCart = async (req, res, next) => {
 
       cart.items.push({
         product: productId,
-        color: {
-          name: validColor.name,
-          code: validColor.code,
-        },
+        color: selectedColor,
         quantity,
         price: product.price,
       });

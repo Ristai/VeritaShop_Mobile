@@ -32,6 +32,7 @@ const register = async (req, res, next) => {
         name: user.name,
         email: user.email,
         avatar: user.avatar,
+        role: user.role,
       },
       accessToken,
       refreshToken,
@@ -85,6 +86,7 @@ const login = async (req, res, next) => {
         avatar: user.avatar,
         phone: user.phone,
         addresses: user.addresses,
+        role: user.role,
       },
       accessToken,
       refreshToken,
@@ -164,6 +166,7 @@ const getMe = async (req, res, next) => {
         avatar: user.avatar,
         phone: user.phone,
         addresses: user.addresses,
+        role: user.role,
         createdAt: user.createdAt,
       }
     });

@@ -10,6 +10,13 @@ import 'presentation/view_models/wishlist_view_model.dart';
 import 'presentation/view_models/order_view_model.dart';
 import 'presentation/view_models/search_history_view_model.dart';
 import 'presentation/view_models/theme_view_model.dart';
+import 'presentation/view_models/admin/admin_dashboard_view_model.dart';
+import 'presentation/view_models/admin/admin_product_view_model.dart';
+import 'presentation/view_models/admin/admin_order_view_model.dart';
+import 'presentation/view_models/admin/admin_user_view_model.dart';
+import 'presentation/view_models/admin/admin_coupon_view_model.dart';
+import 'presentation/view_models/admin/admin_review_view_model.dart';
+import 'presentation/view_models/admin/admin_report_view_model.dart';
 import 'presentation/screens/splash_screen.dart';
 
 void main() async {
@@ -31,6 +38,14 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => WishlistViewModel()),
         ChangeNotifierProvider(create: (_) => OrderViewModel()),
         ChangeNotifierProvider(create: (_) => SearchHistoryViewModel()),
+        // Admin Providers
+        ChangeNotifierProvider(create: (_) => AdminDashboardViewModel()),
+        ChangeNotifierProvider(create: (_) => AdminProductViewModel()),
+        ChangeNotifierProvider(create: (_) => AdminOrderViewModel()),
+        ChangeNotifierProvider(create: (_) => AdminUserViewModel()),
+        ChangeNotifierProvider(create: (_) => AdminCouponViewModel()),
+        ChangeNotifierProvider(create: (_) => AdminReviewViewModel()),
+        ChangeNotifierProvider(create: (_) => AdminReportViewModel()),
       ],
       child: Consumer<ThemeViewModel>(
         builder: (context, themeVM, child) {

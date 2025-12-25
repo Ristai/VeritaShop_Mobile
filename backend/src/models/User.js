@@ -41,6 +41,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: '',
   },
+  role: {
+    type: String,
+    enum: ['customer', 'admin'],
+    default: 'customer',
+  },
   addresses: [addressSchema],
   refreshToken: {
     type: String,

@@ -53,9 +53,13 @@ dependencies:
 
   # Image Caching
   cached_network_image: ^3.3.1
+  
+  # Image Picker
+  image_picker: ^1.0.7
 
   # Utilities
   intl: ^0.19.0
+  fl_chart: ^1.1.1
 
 dev_dependencies:
   flutter_test:

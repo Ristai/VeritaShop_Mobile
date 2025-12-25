@@ -15,8 +15,14 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   @override
   void initState() {
     super.initState();
+    _loadOrders();
+  }
+
+  void _loadOrders() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<OrderViewModel>().loadOrders();
+      if (mounted) {
+        context.read<OrderViewModel>().loadOrders();
+      }
     });
   }
 
@@ -291,13 +297,18 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         color = kAccentColor;
         break;
       case OrderStatus.shipping:
+      case OrderStatus.shipped:
         color = kPurpleColor;
         break;
       case OrderStatus.delivered:
+      case OrderStatus.completed:
         color = kGreenColor;
         break;
       case OrderStatus.cancelled:
         color = kRedColor;
+        break;
+      case OrderStatus.refunded:
+        color = Colors.grey;
         break;
     }
 
@@ -327,11 +338,16 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       case OrderStatus.processing:
         return 'Đang xử lý';
       case OrderStatus.shipping:
+      case OrderStatus.shipped:
         return 'Đang giao';
       case OrderStatus.delivered:
         return 'Đã giao';
+      case OrderStatus.completed:
+        return 'Hoàn thành';
       case OrderStatus.cancelled:
         return 'Đã hủy';
+      case OrderStatus.refunded:
+        return 'Đã hoàn tiền';
     }
   }
 

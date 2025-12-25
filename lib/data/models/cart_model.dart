@@ -52,7 +52,7 @@ class CartModel {
   factory CartModel.fromApiMap(Map<String, dynamic> map) {
     // Handle both cart item format and order item format
     final product = map['product'];
-    final colorData = map['color'] ?? {};
+    final colorData = map['color'] as Map<String, dynamic>? ?? {};
     
     // If product is a Map (cart item), extract from it
     // If product is a String (order item), use direct fields
@@ -67,26 +67,26 @@ class CartModel {
     if (product is Map<String, dynamic>) {
       // Cart item format: has nested product object
       final images = product['images'] as List<dynamic>? ?? [];
-      productId = product['_id'] ?? product['id'] ?? '';
-      productName = product['name'] ?? '';
-      productBrand = product['brand'] ?? '';
-      productImageUrl = images.isNotEmpty ? images[0] : '';
-      price = (map['price'] ?? product['price'] ?? 0).toDouble();
-      originalPrice = product['originalPrice']?.toDouble();
-      stock = product['stock'] ?? 0;
+      productId = (product['_id'] ?? product['id'] ?? '').toString();
+      productName = (product['name'] ?? '').toString();
+      productBrand = (product['brand'] ?? '').toString();
+      productImageUrl = images.isNotEmpty ? images[0].toString() : '';
+      price = _toDouble(map['price'] ?? product['price']);
+      originalPrice = _toDoubleOrNull(product['originalPrice']);
+      stock = _toInt(product['stock']);
     } else {
       // Order item format: direct fields
-      productId = map['product']?.toString() ?? map['productId'] ?? '';
-      productName = map['name'] ?? '';
-      productBrand = map['brand'] ?? '';
-      productImageUrl = map['image'] ?? '';
-      price = (map['price'] ?? 0).toDouble();
+      productId = (product ?? map['productId'] ?? '').toString();
+      productName = (map['name'] ?? '').toString();
+      productBrand = (map['brand'] ?? '').toString();
+      productImageUrl = (map['image'] ?? '').toString();
+      price = _toDouble(map['price']);
       originalPrice = null;
       stock = 0;
     }
     
     return CartModel(
-      id: map['_id'] ?? map['id'] ?? '',
+      id: (map['_id'] ?? map['id'] ?? '').toString(),
       userId: '',
       productId: productId,
       productName: productName,
@@ -94,15 +94,39 @@ class CartModel {
       productImageUrl: productImageUrl,
       price: price,
       originalPrice: originalPrice,
-      quantity: map['quantity'] ?? 1,
+      quantity: _toInt(map['quantity'], defaultValue: 1),
       color: CartColor(
-        name: colorData['name'] ?? '',
-        code: colorData['code'],
+        name: (colorData['name'] ?? '').toString(),
+        code: colorData['code']?.toString(),
       ),
       stock: stock,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
+  }
+  
+  static double _toDouble(dynamic value, {double defaultValue = 0}) {
+    if (value == null) return defaultValue;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? defaultValue;
+    return defaultValue;
+  }
+  
+  static double? _toDoubleOrNull(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
+  }
+  
+  static int _toInt(dynamic value, {int defaultValue = 0}) {
+    if (value == null) return defaultValue;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? defaultValue;
+    return defaultValue;
   }
 
   /// Convert sang Map

@@ -7,6 +7,7 @@ import '../view_models/auth_view_model.dart';
 import 'register_screen.dart';
 import 'product_list_screen.dart';
 import 'forgot_password_screen.dart';
+import 'admin/admin_shell.dart';
 
 /// Màn hình đăng nhập - Welcome Portal
 class LoginScreen extends StatefulWidget {
@@ -64,19 +65,31 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (success) {
+      final user = authViewModel.currentUser;
+      final isAdmin = user?.role == 'admin';
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Đăng nhập thành công! Xin chào ${authViewModel.currentUser?.name ?? email}'),
+          content: Text('Đăng nhập thành công! Xin chào ${user?.name ?? email}'),
           backgroundColor: kGreenColor,
           behavior: SnackBarBehavior.floating,
         ),
       );
 
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => const ProductListScreen(),
-        ),
-      );
+      // Điều hướng dựa trên role
+      if (isAdmin) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => const AdminShell(),
+          ),
+        );
+      } else {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => const ProductListScreen(),
+          ),
+        );
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
