@@ -60,7 +60,7 @@ class OrderSuccessScreen extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    _buildInfoRow('Mã đơn hàng', order.id),
+                    _buildInfoRow('Mã đơn hàng', order.orderNumber.isNotEmpty ? order.orderNumber : order.id),
                     const Divider(color: kBorderColor, height: 24),
                     _buildInfoRow('Số sản phẩm', '${order.totalItems} sản phẩm'),
                     const Divider(color: kBorderColor, height: 24),

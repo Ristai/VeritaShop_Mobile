@@ -237,9 +237,13 @@ class _WishlistScreenState extends State<WishlistScreen> {
                       color: kAccentColor,
                       onPressed: () async {
                         final cartViewModel = context.read<CartViewModel>();
+                        final defaultColor = product.colors.isNotEmpty 
+                            ? product.colors.first.toMap() 
+                            : {'name': 'Mặc định', 'hex': '#000000'};
                         final success = await cartViewModel.addToCart(
                           productId: product.id,
                           quantity: 1,
+                          color: defaultColor,
                         );
                         if (success) {
                           ScaffoldMessenger.of(context).showSnackBar(

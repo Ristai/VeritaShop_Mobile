@@ -61,9 +61,9 @@ class _CartScreenState extends State<CartScreen> {
     });
 
     try {
-      final success = await _cartRepository.updateCartItem(cartItemId, newQuantity);
+      final result = await _cartRepository.updateCartItem(cartItemId, newQuantity);
       
-      if (success) {
+      if (result != null) {
         await _loadCartItems(); // Refresh data
         
         if (mounted) {
@@ -127,9 +127,9 @@ class _CartScreenState extends State<CartScreen> {
     });
 
     try {
-      final success = await _cartRepository.removeFromCart(cartItemId);
+      final result = await _cartRepository.removeFromCart(cartItemId);
       
-      if (success) {
+      if (result != null) {
         await _loadCartItems(); // Refresh data
         
         if (mounted) {

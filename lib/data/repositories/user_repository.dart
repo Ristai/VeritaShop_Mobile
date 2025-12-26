@@ -15,7 +15,7 @@ class UserRepository {
         id: '1',
         name: email.split('@')[0],
         email: email,
-        avatarUrl: 'https://i.pravatar.cc/150?img=12',
+        avatarUrl: 'https://ui-avatars.com/api/?name=User&background=random&size=150',
         createdAt: DateTime.now(),
       );
     }

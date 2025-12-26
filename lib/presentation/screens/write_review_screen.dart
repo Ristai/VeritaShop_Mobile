@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
-import '../../data/models/review_model.dart';
+import '../../data/repositories/review_repository.dart';
 import '../widgets/custom_button.dart';
 
 class WriteReviewScreen extends StatefulWidget {
@@ -21,21 +21,15 @@ class WriteReviewScreen extends StatefulWidget {
 
 class _WriteReviewScreenState extends State<WriteReviewScreen> {
   final TextEditingController _reviewController = TextEditingController();
+  final TextEditingController _titleController = TextEditingController();
+  final ReviewRepository _reviewRepository = ReviewRepository();
   int _rating = 5;
   bool _isSubmitting = false;
-  String _selectedTag = 'Sản phẩm';
-
-  final List<String> _tags = [
-    'Sản phẩm',
-    'Dịch vụ',
-    'Giao hàng',
-    'Đóng gói',
-    'Chất lượng',
-  ];
 
   @override
   void dispose() {
     _reviewController.dispose();
+    _titleController.dispose();
     super.dispose();
   }
 
@@ -53,32 +47,49 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
 
     setState(() => _isSubmitting = true);
 
-    await Future.delayed(const Duration(seconds: 1));
-
-    final review = ReviewModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      userId: 'current_user',
-      userName: 'Người dùng',
-      avatarUrl: '',
-      productId: widget.productId,
-      reviewText: _reviewController.text.trim(),
-      rating: _rating.toDouble(),
-      aiScore: 0.85,
-      sentiment: _rating >= 4 ? 'Tích cực' : (_rating >= 3 ? 'Trung tính' : 'Tiêu cực'),
-      tag: _selectedTag,
-      createdAt: DateTime.now(),
-    );
-
-    if (mounted) {
-      setState(() => _isSubmitting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Đã gửi đánh giá thành công!'),
-          backgroundColor: kGreenColor,
-          behavior: SnackBarBehavior.floating,
-        ),
+    try {
+      final review = await _reviewRepository.createReview(
+        productId: widget.productId,
+        rating: _rating,
+        text: _reviewController.text.trim(),
+        title: _titleController.text.trim().isNotEmpty 
+            ? _titleController.text.trim() 
+            : null,
       );
-      Navigator.pop(context, review);
+
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+        
+        if (review != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Đã gửi đánh giá thành công!'),
+              backgroundColor: kGreenColor,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          Navigator.pop(context, review);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Không thể gửi đánh giá. Vui lòng thử lại.'),
+              backgroundColor: kRedColor,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi: ${e.toString()}'),
+            backgroundColor: kRedColor,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 
@@ -105,7 +116,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
             const SizedBox(height: 24),
             _buildRatingSection(colors),
             const SizedBox(height: 24),
-            _buildTagSection(colors),
+            _buildTitleInput(colors),
             const SizedBox(height: 24),
             _buildReviewInput(colors),
             const SizedBox(height: 32),
@@ -244,12 +255,12 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
     return kGreenColor;
   }
 
-  Widget _buildTagSection(AppColors colors) {
+  Widget _buildTitleInput(AppColors colors) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Về khía cạnh nào?',
+          'Tiêu đề (tùy chọn)',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
@@ -257,35 +268,24 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: _tags.map((tag) {
-            final isSelected = tag == _selectedTag;
-            return GestureDetector(
-              onTap: () => setState(() => _selectedTag = tag),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: isSelected ? kAccentColor : colors.card,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isSelected ? kAccentColor : colors.border,
-                  ),
-                ),
-                child: Text(
-                  tag,
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : colors.primaryText,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
+        Container(
+          decoration: BoxDecoration(
+            color: colors.card,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: colors.border),
+          ),
+          child: TextField(
+            controller: _titleController,
+            maxLength: 100,
+            style: TextStyle(color: colors.primaryText),
+            decoration: InputDecoration(
+              hintText: 'Tiêu đề đánh giá...',
+              hintStyle: TextStyle(color: colors.secondaryText),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.all(16),
+              counterStyle: TextStyle(color: colors.secondaryText),
+            ),
+          ),
         ),
       ],
     );

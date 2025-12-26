@@ -9,7 +9,6 @@ import 'product_list_screen.dart';
 import 'analytics_screen.dart';
 import 'comments_screen.dart';
 import 'settings_screen.dart';
-import 'profile_screen.dart';
 
 //==============================================================================
 // LỚP CHÍNH CỦA MÀN HÌNH HOME
@@ -89,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     _reviews = [
       ReviewViewModel.fromParams(
-        avatarUrl: 'https://i.pravatar.cc/150?img=1',
+        avatarUrl: 'https://ui-avatars.com/api/?name=Nguyen+Van+A&background=random&size=150',
         name: 'Nguyễn Văn A',
         time: '2 phút trước',
         sentiment: 'Tích cực',
@@ -101,7 +100,7 @@ class _HomeScreenState extends State<HomeScreen> {
         tag: 'Dịch vụ',
       ),
       ReviewViewModel.fromParams(
-        avatarUrl: 'https://i.pravatar.cc/150?img=5',
+        avatarUrl: 'https://ui-avatars.com/api/?name=Tran+Thi+B&background=random&size=150',
         name: 'Trần Thị B',
         time: '5 phút trước',
         sentiment: 'Trung tính',
@@ -112,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
         tag: 'Sản phẩm',
       ),
       ReviewViewModel.fromParams(
-        avatarUrl: 'https://i.pravatar.cc/150?img=3',
+        avatarUrl: 'https://ui-avatars.com/api/?name=Le+Van+C&background=random&size=150',
         name: 'Lê Văn C',
         time: '8 phút trước',
         sentiment: 'Tích cực',
@@ -276,7 +275,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _reviews.add(
         ReviewViewModel.fromParams(
-          avatarUrl: 'https://i.pravatar.cc/150?img=7',
+          avatarUrl: 'https://ui-avatars.com/api/?name=Pham+Van+D&background=random&size=150',
           name: 'Phạm Văn D',
           time: '12 phút trước',
           sentiment: 'Tiêu cực',

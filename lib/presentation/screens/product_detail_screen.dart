@@ -46,9 +46,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     
     try {
       final cartViewModel = context.read<CartViewModel>();
+      final defaultColor = widget.product.colors.isNotEmpty 
+          ? widget.product.colors.first.toMap() 
+          : {'name': 'Mặc định', 'hex': '#000000'};
       final success = await cartViewModel.addToCart(
         productId: widget.product.id,
         quantity: _quantity,
+        color: defaultColor,
       );
       
       if (mounted) {

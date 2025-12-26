@@ -1,104 +1,207 @@
 # VeritaShop - Ecommerce Mobile App
 
-Ứng dụng thương mại điện tử được xây dựng bằng Flutter.
+Ứng dụng thương mại điện tử điện thoại di động được xây dựng bằng Flutter với Backend Node.js/Express.
+
+## Tính năng chính
+
+### Khách hàng
+- Đăng ký/Đăng nhập với JWT Authentication
+- Quên mật khẩu (gửi email reset)
+- Xem danh sách sản phẩm, tìm kiếm, lọc theo brand/giá/tình trạng
+- Xem chi tiết sản phẩm với thông số kỹ thuật
+- Giỏ hàng và Wishlist
+- Đặt hàng với mã giảm giá
+- Xem lịch sử đơn hàng, đặt lại đơn
+- Viết đánh giá sản phẩm
+- Dark/Light mode
+
+### Admin Dashboard
+- Quản lý sản phẩm (CRUD) với upload ảnh lên Cloudinary
+- Quản lý đơn hàng, cập nhật trạng thái
+- Quản lý người dùng
+- Quản lý mã giảm giá
+- Quản lý đánh giá
+- Báo cáo doanh thu, thống kê
 
 ## Yêu cầu hệ thống
 
-### Để chạy trên iOS:
-- **macOS** (bắt buộc - không thể build iOS app trên Windows/Linux)
-- **Xcode** (phiên bản mới nhất từ App Store)
-- **CocoaPods** (cài đặt bằng: `sudo gem install cocoapods`)
-- **Flutter SDK** (phiên bản 3.8.1 trở lên)
+### Frontend (Flutter)
+- **Flutter SDK** 3.8.1+
+- **Dart SDK** 3.8.1+
+- **macOS + Xcode** (cho iOS)
+- **Android Studio** (cho Android)
 
-## Cài đặt và chạy trên iOS
+### Backend (Node.js)
+- **Node.js** 18.0.0+
+- **MongoDB** (local hoặc MongoDB Atlas)
+- **Cloudinary** account (để upload ảnh)
 
-### Bước 1: Cài đặt dependencies Flutter
+## Cài đặt
+
+### 1. Clone repository
 ```bash
+git clone <repo-url>
+cd VeritaShop-Ecommerce-MobileApp
+```
+
+### 2. Cấu hình Backend
+
+```bash
+cd backend
+npm install
+```
+
+Tạo file `.env` trong thư mục `backend/`:
+```env
+PORT=3000
+MONGODB_URI=mongodb://localhost:27017/veritashop
+JWT_SECRET=your_jwt_secret_key
+
+# Cloudinary
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+
+# Email (cho Forgot Password)
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=your_email@gmail.com
+EMAIL_PASS=your_app_password
+```
+
+Seed database với dữ liệu mẫu:
+```bash
+npm run seed
+```
+
+Chạy backend:
+```bash
+npm run dev
+```
+
+Backend sẽ chạy tại `http://localhost:3000`
+
+### 3. Cấu hình Flutter
+
+```bash
+cd ..
 flutter pub get
 ```
 
-### Bước 2: Cài đặt CocoaPods dependencies
-```bash
-cd ios
-pod install
-cd ..
+Tạo file `.env` ở thư mục gốc:
+```env
+API_BASE_URL=http://localhost:3000/api
 ```
 
-### Bước 3: Kiểm tra thiết bị iOS có sẵn
+### 4. Chạy ứng dụng
+
 ```bash
-flutter devices
+# Web
+flutter run -d chrome
+
+# Android
+flutter run -d android
+
+# iOS (macOS only)
+cd ios && pod install && cd ..
+flutter run -d ios
 ```
 
-### Bước 4: Chạy ứng dụng
+## Tài khoản mặc định
 
-#### Trên iOS Simulator:
-```bash
-# Mở iOS Simulator
-open -a Simulator
+Sau khi chạy `npm run seed`:
 
-# Chạy ứng dụng
-flutter run
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | admin@veritashop.com | Admin@123 |
+| Customer | user@veritashop.com | User@123 |
+
+## Cấu trúc dự án
+
+```
+├── backend/                 # Node.js/Express API
+│   ├── src/
+│   │   ├── controllers/     # Route handlers
+│   │   ├── middleware/      # Auth, admin middleware
+│   │   ├── models/          # Mongoose schemas
+│   │   ├── routes/          # API routes
+│   │   └── utils/           # Helpers, seed
+│   └── server.js
+│
+├── lib/                     # Flutter app
+│   ├── core/
+│   │   ├── constants/       # Colors, config
+│   │   ├── network/         # API service, interceptors
+│   │   ├── routes/          # App routing
+│   │   └── theme/           # Dark/Light themes
+│   ├── data/
+│   │   ├── models/          # Data models
+│   │   └── repositories/    # Data layer
+│   └── presentation/
+│       ├── screens/         # UI screens
+│       │   └── admin/       # Admin dashboard
+│       ├── view_models/     # State management
+│       └── widgets/         # Reusable widgets
+│
+└── openspec/                # API specifications
 ```
 
-Hoặc chỉ định simulator cụ thể:
-```bash
-flutter run -d "iPhone 15 Pro"
-```
+## API Endpoints
 
-#### Trên thiết bị iOS thật:
+### Auth
+- `POST /api/auth/register` - Đăng ký
+- `POST /api/auth/login` - Đăng nhập
+- `POST /api/auth/forgot-password` - Quên mật khẩu
+- `POST /api/auth/reset-password` - Đặt lại mật khẩu
+- `GET /api/auth/me` - Lấy thông tin user
 
-1. **Kết nối iPhone với Mac** qua cáp USB
+### Products
+- `GET /api/products` - Danh sách sản phẩm
+- `GET /api/products/:id` - Chi tiết sản phẩm
+- `GET /api/products/:id/reviews` - Đánh giá sản phẩm
 
-2. **Trust máy tính** trên iPhone (nếu lần đầu)
+### Cart
+- `GET /api/cart` - Xem giỏ hàng
+- `POST /api/cart/add` - Thêm vào giỏ
+- `PUT /api/cart/update` - Cập nhật số lượng
+- `DELETE /api/cart/remove/:productId` - Xóa sản phẩm
 
-3. **Cấu hình Signing & Capabilities trong Xcode:**
-   - Mở file `ios/Runner.xcworkspace` trong Xcode
-   - Chọn target "Runner" → tab "Signing & Capabilities"
-   - Chọn Team (Apple Developer Account của bạn)
-   - Xcode sẽ tự động tạo Provisioning Profile
+### Orders
+- `POST /api/orders` - Tạo đơn hàng
+- `GET /api/orders` - Lịch sử đơn hàng
+- `GET /api/orders/:id` - Chi tiết đơn hàng
 
-4. **Chạy ứng dụng:**
-   ```bash
-   flutter run
-   ```
+### Admin
+- `GET /api/admin/dashboard` - Thống kê tổng quan
+- `GET/POST/PUT/DELETE /api/admin/products` - CRUD sản phẩm
+- `GET/PUT /api/admin/orders` - Quản lý đơn hàng
+- `GET/PUT/DELETE /api/admin/users` - Quản lý users
+- `GET/POST/PUT/DELETE /api/admin/coupons` - Quản lý mã giảm giá
+- `GET/PUT/DELETE /api/admin/reviews` - Quản lý đánh giá
+- `GET /api/admin/reports/*` - Báo cáo
 
-   Hoặc build và cài đặt:
-   ```bash
-   flutter build ios
-   ```
+### Upload
+- `POST /api/upload/image` - Upload 1 ảnh lên Cloudinary
+- `POST /api/upload/images` - Upload nhiều ảnh
 
-### Lưu ý quan trọng:
+## Tech Stack
 
-- **Apple Developer Account**: Cần tài khoản Apple Developer (miễn phí hoặc trả phí) để chạy trên thiết bị thật
-- **Bundle Identifier**: Đảm bảo Bundle ID trong Xcode là duy nhất
-- **Provisioning Profile**: Xcode sẽ tự động tạo khi bạn chọn Team
+### Frontend
+- Flutter 3.8.1+
+- Provider (State Management)
+- Dio (HTTP Client)
+- SharedPreferences + FlutterSecureStorage
+- Image Picker
+- Cached Network Image
 
-## Troubleshooting
+### Backend
+- Node.js + Express
+- MongoDB + Mongoose
+- JWT Authentication
+- Cloudinary (Image Storage)
+- Nodemailer (Email)
+- Multer (File Upload)
 
-### Lỗi "No devices found":
-- Đảm bảo iPhone đã unlock và trust máy tính
-- Kiểm tra cáp USB kết nối tốt
-- Chạy `flutter doctor` để kiểm tra cấu hình
+## License
 
-### Lỗi CocoaPods:
-```bash
-cd ios
-pod deintegrate
-pod install
-cd ..
-```
-
-### Lỗi signing:
-- Mở Xcode và kiểm tra lại Signing & Capabilities
-- Đảm bảo đã đăng nhập Apple ID trong Xcode Preferences
-
-## Getting Started
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+MIT License

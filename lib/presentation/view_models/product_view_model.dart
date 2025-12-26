@@ -55,6 +55,7 @@ class ProductViewModel {
   bool get isLowStock => product.isLowStock;
   bool get isOutOfStock => product.isOutOfStock;
   String get formattedPrice => product.formattedPrice;
+  List<ProductColor> get colors => product.colors;
 
   /// Màu sắc cho trạng thái kho (UI-specific)
   Color get stockStatusColor {

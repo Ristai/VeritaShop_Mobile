@@ -10,6 +10,8 @@ import '../../presentation/screens/order_history_screen.dart';
 import '../../presentation/screens/wishlist_screen.dart';
 import '../../presentation/screens/splash_screen.dart';
 import '../../presentation/screens/onboarding_screen.dart';
+import '../../presentation/screens/admin/admin_login_screen.dart';
+import '../../presentation/screens/admin/admin_shell.dart';
 
 class AppRoutes {
   static const String splash = '/splash';
@@ -23,6 +25,8 @@ class AppRoutes {
   static const String checkout = '/checkout';
   static const String orders = '/orders';
   static const String wishlist = '/wishlist';
+  static const String adminLogin = '/admin-login';
+  static const String admin = '/admin';
 
   static Map<String, WidgetBuilder> get routes {
     return {
@@ -37,6 +41,8 @@ class AppRoutes {
       checkout: (context) => const CheckoutScreen(),
       orders: (context) => const OrderHistoryScreen(),
       wishlist: (context) => const WishlistScreen(),
+      adminLogin: (context) => const AdminLoginScreen(),
+      admin: (context) => const AdminShell(),
     };
   }
 

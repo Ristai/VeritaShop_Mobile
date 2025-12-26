@@ -27,13 +27,20 @@ class CartViewModel extends ChangeNotifier {
     _clearError();
 
     try {
-      final items = await _cartRepository.getCartItems();
-      final summary = await _cartRepository.getCartSummary();
-      
-      _cartItems = items;
-      _cartSummary = summary;
+      print('CartViewModel: Loading cart items...');
+      final cartData = await _cartRepository.getCart();
+      print('CartViewModel: Got ${cartData.items.length} items, total: ${cartData.total}');
+      _cartItems = cartData.items;
+      _cartSummary = CartSummary(
+        items: cartData.items,
+        subtotal: cartData.subtotal,
+        shippingFee: cartData.shippingFee,
+        tax: cartData.tax,
+        total: cartData.total,
+      );
       notifyListeners();
     } catch (e) {
+      print('CartViewModel: Error loading cart: $e');
       _setError(e.toString());
     } finally {
       _setLoading(false);
@@ -44,22 +51,32 @@ class CartViewModel extends ChangeNotifier {
   Future<bool> addToCart({
     required String productId,
     required int quantity,
+    required Map<String, dynamic> color,
   }) async {
     _setLoading(true);
     _clearError();
 
     try {
-      final success = await _cartRepository.addToCart(
+      final result = await _cartRepository.addToCart(
         productId: productId,
         quantity: quantity,
+        color: color,
       );
       
-      if (success) {
-        // Refresh cart items
-        await loadCartItems();
+      if (result != null) {
+        _cartItems = result.items;
+        _cartSummary = CartSummary(
+          items: result.items,
+          subtotal: result.subtotal,
+          shippingFee: result.shippingFee,
+          tax: result.tax,
+          total: result.total,
+        );
+        notifyListeners();
+        return true;
       }
       
-      return success;
+      return false;
     } catch (e) {
       _setError(e.toString());
       return false;
@@ -74,14 +91,22 @@ class CartViewModel extends ChangeNotifier {
     _clearError();
 
     try {
-      final success = await _cartRepository.updateCartItem(cartItemId, newQuantity);
+      final result = await _cartRepository.updateCartItem(cartItemId, newQuantity);
       
-      if (success) {
-        // Refresh cart items
-        await loadCartItems();
+      if (result != null) {
+        _cartItems = result.items;
+        _cartSummary = CartSummary(
+          items: result.items,
+          subtotal: result.subtotal,
+          shippingFee: result.shippingFee,
+          tax: result.tax,
+          total: result.total,
+        );
+        notifyListeners();
+        return true;
       }
       
-      return success;
+      return false;
     } catch (e) {
       _setError(e.toString());
       return false;
@@ -96,14 +121,22 @@ class CartViewModel extends ChangeNotifier {
     _clearError();
 
     try {
-      final success = await _cartRepository.removeFromCart(cartItemId);
+      final result = await _cartRepository.removeFromCart(cartItemId);
       
-      if (success) {
-        // Refresh cart items
-        await loadCartItems();
+      if (result != null) {
+        _cartItems = result.items;
+        _cartSummary = CartSummary(
+          items: result.items,
+          subtotal: result.subtotal,
+          shippingFee: result.shippingFee,
+          tax: result.tax,
+          total: result.total,
+        );
+        notifyListeners();
+        return true;
       }
       
-      return success;
+      return false;
     } catch (e) {
       _setError(e.toString());
       return false;
@@ -121,7 +154,6 @@ class CartViewModel extends ChangeNotifier {
       final success = await _cartRepository.clearCart();
       
       if (success) {
-        // Clear local data
         _cartItems.clear();
         _cartSummary = null;
         notifyListeners();
@@ -148,7 +180,7 @@ class CartViewModel extends ChangeNotifier {
     if (item.quantity > 1) {
       return await updateQuantity(cartItemId, item.quantity - 1);
     }
-    return true; // Nếu quantity = 1, không làm gì cả
+    return true;
   }
 
   // Private helper methods

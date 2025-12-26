@@ -45,29 +45,39 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _initializeApp() async {
-    await Future.delayed(const Duration(seconds: 2));
-    
     if (!mounted) return;
     
     final prefs = await SharedPreferences.getInstance();
     final onboardingCompleted = prefs.getBool('onboarding_completed') ?? false;
     
     if (!onboardingCompleted) {
+      await Future.delayed(const Duration(milliseconds: 500));
       if (mounted) {
         Navigator.of(context).pushReplacementNamed('/onboarding');
       }
       return;
     }
     
+    // Kiểm tra auth ngay lập tức
     final authViewModel = context.read<AuthViewModel>();
     await authViewModel.checkAuthStatus();
     
     if (!mounted) return;
     
     if (authViewModel.isAuthenticated) {
-      Navigator.of(context).pushReplacementNamed('/home');
+      // Đã đăng nhập -> điều hướng ngay không cần chờ
+      final isAdmin = authViewModel.currentUser?.role == 'admin';
+      if (isAdmin) {
+        Navigator.of(context).pushReplacementNamed('/admin');
+      } else {
+        Navigator.of(context).pushReplacementNamed('/home');
+      }
     } else {
-      Navigator.of(context).pushReplacementNamed('/login');
+      // Chưa đăng nhập -> hiển thị splash 1 giây rồi vào login
+      await Future.delayed(const Duration(seconds: 1));
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed('/login');
+      }
     }
   }
 
