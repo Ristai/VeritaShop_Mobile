@@ -3,8 +3,12 @@ const Product = require('../models/Product');
 const Order = require('../models/Order');
 const Coupon = require('../models/Coupon');
 const Review = require('../models/Review');
+const Cart = require('../models/Cart');
+const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const { successResponse, errorResponse } = require('../utils/response');
-const { sendOrderStatusUpdateEmail } = require('../utils/emailService');
+const { sendOrderStatusUpdateEmail, sendPasswordResetEmail } = require('../utils/emailService');
+const { getFlaggedCategoriesVietnamese, MODERATION_CATEGORIES } = require('../utils/moderationService');
 
 // Dashboard Stats
 const getDashboardStats = async (req, res) => {
@@ -279,6 +283,130 @@ const updateUserStatus = async (req, res) => {
   }
 };
 
+// Create User (Admin)
+const createUser = async (req, res) => {
+  try {
+    const { name, email, phone, password } = req.body;
+
+    // Check if email already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return errorResponse(res, 'Email đã được sử dụng', 400);
+    }
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const user = await User.create({
+      name,
+      email,
+      phone,
+      password: hashedPassword,
+      role: 'customer',
+      isActive: true,
+    });
+
+    // Remove password from response
+    const userResponse = user.toObject();
+    delete userResponse.password;
+
+    successResponse(res, { user: userResponse }, 'Tạo người dùng thành công', 201);
+  } catch (error) {
+    errorResponse(res, error.message, 400);
+  }
+};
+
+// Update User (Admin)
+const updateUser = async (req, res) => {
+  try {
+    const { name, email, phone, address } = req.body;
+
+    const user = await User.findById(req.params.id);
+    if (!user) return errorResponse(res, 'Không tìm thấy người dùng', 404);
+    if (user.role === 'admin') return errorResponse(res, 'Không thể chỉnh sửa tài khoản admin', 400);
+
+    // Check if email is being changed and if it's already used
+    if (email && email !== user.email) {
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return errorResponse(res, 'Email đã được sử dụng', 400);
+      }
+    }
+
+    // Update fields
+    if (name) user.name = name;
+    if (email) user.email = email;
+    if (phone) user.phone = phone;
+    if (address) user.address = address;
+
+    await user.save();
+
+    // Remove sensitive fields from response
+    const userResponse = user.toObject();
+    delete userResponse.password;
+    delete userResponse.refreshToken;
+
+    successResponse(res, { user: userResponse }, 'Cập nhật người dùng thành công');
+  } catch (error) {
+    errorResponse(res, error.message, 400);
+  }
+};
+
+// Delete User (Admin)
+const deleteUser = async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    // Prevent admin from deleting themselves
+    if (userId === req.user._id.toString()) {
+      return errorResponse(res, 'Không thể xóa tài khoản của chính bạn', 400);
+    }
+
+    const user = await User.findById(userId);
+    if (!user) return errorResponse(res, 'Không tìm thấy người dùng', 404);
+    if (user.role === 'admin') return errorResponse(res, 'Không thể xóa tài khoản admin', 400);
+
+    // Delete user's cart
+    await Cart.findOneAndDelete({ user: userId });
+
+    // Delete the user
+    await User.findByIdAndDelete(userId);
+
+    successResponse(res, null, 'Xóa người dùng thành công');
+  } catch (error) {
+    errorResponse(res, error.message, 500);
+  }
+};
+
+// Reset User Password (Admin)
+const resetUserPassword = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return errorResponse(res, 'Không tìm thấy người dùng', 404);
+    if (user.role === 'admin') return errorResponse(res, 'Không thể reset mật khẩu admin', 400);
+
+    // Generate temporary password
+    const tempPassword = crypto.randomBytes(4).toString('hex'); // 8 character password
+
+    // Hash and save new password
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(tempPassword, salt);
+    await user.save();
+
+    // Send email with new password
+    try {
+      await sendPasswordResetEmail(user.email, user.name, tempPassword);
+    } catch (emailError) {
+      console.error('Failed to send password reset email:', emailError);
+    }
+
+    successResponse(res, { email: user.email }, 'Đã reset mật khẩu và gửi email cho người dùng');
+  } catch (error) {
+    errorResponse(res, error.message, 500);
+  }
+};
+
 // Coupons Management
 const getAllCoupons = async (req, res) => {
   try {
@@ -321,10 +449,14 @@ const deleteCoupon = async (req, res) => {
 // Reviews Management
 const getAllReviews = async (req, res) => {
   try {
-    const { page = 1, limit = 20, status, sort = '-createdAt' } = req.query;
-    
+    const { page = 1, limit = 20, status, flagged, sort = '-createdAt' } = req.query;
+
     const query = {};
+    // Legacy status filter (approved/pending based on isApproved field)
     if (status) query.isApproved = status === 'approved';
+    // New moderation filter
+    if (flagged === 'true') query.isFlagged = true;
+    if (flagged === 'false') query.isFlagged = false;
 
     const reviews = await Review.find(query)
       .populate('user', 'name email avatar')
@@ -334,9 +466,23 @@ const getAllReviews = async (req, res) => {
       .limit(parseInt(limit))
       .lean();
 
-    const total = await Review.countDocuments(query);
+    // Add Vietnamese category names for flagged reviews
+    const reviewsWithVietnamese = reviews.map(review => ({
+      ...review,
+      flaggedCategoriesVietnamese: review.moderationResult?.categories
+        ? getFlaggedCategoriesVietnamese(review.moderationResult.categories)
+        : [],
+    }));
 
-    successResponse(res, { reviews, pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / limit) } });
+    const total = await Review.countDocuments(query);
+    // Count flagged reviews for badge
+    const flaggedCount = await Review.countDocuments({ isFlagged: true, moderationStatus: 'pending' });
+
+    successResponse(res, {
+      reviews: reviewsWithVietnamese,
+      flaggedCount,
+      pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / limit) }
+    });
   } catch (error) {
     errorResponse(res, error.message, 500);
   }
@@ -360,7 +506,7 @@ const deleteReview = async (req, res) => {
   try {
     const review = await Review.findByIdAndDelete(req.params.id);
     if (!review) return errorResponse(res, 'Không tìm thấy đánh giá', 404);
-    
+
     // Update product rating
     const productReviews = await Review.find({ product: review.product });
     const avgRating = productReviews.length > 0
@@ -369,6 +515,99 @@ const deleteReview = async (req, res) => {
     await Product.findByIdAndUpdate(review.product, { rating: avgRating, reviewCount: productReviews.length });
 
     successResponse(res, null, 'Đã xóa đánh giá');
+  } catch (error) {
+    errorResponse(res, error.message, 500);
+  }
+};
+
+// Get flagged reviews (moderation pending)
+const getFlaggedReviews = async (req, res) => {
+  try {
+    const { page = 1, limit = 20, sort = '-createdAt' } = req.query;
+
+    const query = { isFlagged: true, moderationStatus: 'pending' };
+
+    const reviews = await Review.find(query)
+      .populate('user', 'name email avatar')
+      .populate('product', 'name images')
+      .sort(sort)
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit))
+      .lean();
+
+    // Add Vietnamese category names
+    const reviewsWithVietnamese = reviews.map(review => ({
+      ...review,
+      flaggedCategoriesVietnamese: review.moderationResult?.categories
+        ? getFlaggedCategoriesVietnamese(review.moderationResult.categories)
+        : [],
+    }));
+
+    const total = await Review.countDocuments(query);
+
+    successResponse(res, {
+      reviews: reviewsWithVietnamese,
+      pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / limit) }
+    });
+  } catch (error) {
+    errorResponse(res, error.message, 500);
+  }
+};
+
+// Approve moderation (clear flag, set status to approved)
+const approveReviewModeration = async (req, res) => {
+  try {
+    const { note } = req.body;
+
+    const review = await Review.findByIdAndUpdate(
+      req.params.id,
+      {
+        isFlagged: false,
+        moderationStatus: 'approved',
+        moderationNote: note || 'Đã được admin duyệt',
+      },
+      { new: true }
+    ).populate('user', 'name email avatar')
+      .populate('product', 'name images');
+
+    if (!review) return errorResponse(res, 'Không tìm thấy đánh giá', 404);
+
+    successResponse(res, { review }, 'Đã duyệt đánh giá');
+  } catch (error) {
+    errorResponse(res, error.message, 500);
+  }
+};
+
+// Reject moderation (soft delete review)
+const rejectReviewModeration = async (req, res) => {
+  try {
+    const { note } = req.body;
+
+    const review = await Review.findByIdAndUpdate(
+      req.params.id,
+      {
+        isActive: false,
+        moderationStatus: 'rejected',
+        moderationNote: note || 'Bị từ chối do vi phạm nội dung',
+      },
+      { new: true }
+    );
+
+    if (!review) return errorResponse(res, 'Không tìm thấy đánh giá', 404);
+
+    // Update product rating (exclude rejected review)
+    await Review.calcAverageRating(review.product);
+
+    successResponse(res, { review }, 'Đã từ chối đánh giá');
+  } catch (error) {
+    errorResponse(res, error.message, 500);
+  }
+};
+
+// Get moderation categories list with Vietnamese names
+const getModerationCategories = async (req, res) => {
+  try {
+    successResponse(res, { categories: MODERATION_CATEGORIES });
   } catch (error) {
     errorResponse(res, error.message, 500);
   }
@@ -451,6 +690,142 @@ const getOrderReport = async (req, res) => {
   }
 };
 
+// Cart Management (Admin)
+const getAllCarts = async (req, res) => {
+  try {
+    const { page = 1, limit = 20, search } = req.query;
+
+    // Find carts that have items
+    let query = { 'items.0': { $exists: true } };
+
+    // If search provided, find user IDs matching search first
+    if (search) {
+      const matchingUsers = await User.find({
+        $or: [
+          { name: { $regex: search, $options: 'i' } },
+          { email: { $regex: search, $options: 'i' } },
+          { phone: { $regex: search, $options: 'i' } }
+        ]
+      }).select('_id');
+
+      const userIds = matchingUsers.map(u => u._id);
+      query.user = { $in: userIds };
+    }
+
+    const carts = await Cart.find(query)
+      .populate('user', 'name email phone avatar')
+      .populate('items.product', 'name images price brand')
+      .sort('-updatedAt')
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit))
+      .lean();
+
+    const total = await Cart.countDocuments(query);
+
+    // Add computed totals to each cart
+    const cartsWithTotals = carts.map(cart => ({
+      ...cart,
+      itemCount: cart.items.reduce((sum, item) => sum + item.quantity, 0),
+      subtotal: cart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+    }));
+
+    successResponse(res, {
+      carts: cartsWithTotals,
+      pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / limit) }
+    });
+  } catch (error) {
+    errorResponse(res, error.message, 500);
+  }
+};
+
+const getCartByUser = async (req, res) => {
+  try {
+    const cart = await Cart.findOne({ user: req.params.userId })
+      .populate('user', 'name email phone avatar')
+      .populate('items.product', 'name images price brand stock')
+      .lean();
+
+    if (!cart) {
+      return successResponse(res, { cart: { items: [], user: null } });
+    }
+
+    // Add computed totals
+    const cartWithTotals = {
+      ...cart,
+      itemCount: cart.items.reduce((sum, item) => sum + item.quantity, 0),
+      subtotal: cart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+    };
+
+    successResponse(res, { cart: cartWithTotals });
+  } catch (error) {
+    errorResponse(res, error.message, 500);
+  }
+};
+
+const updateCartItem = async (req, res) => {
+  try {
+    const { userId, itemId } = req.params;
+    const { quantity } = req.body;
+
+    if (!quantity || quantity < 1) {
+      return errorResponse(res, 'Số lượng phải lớn hơn 0', 400);
+    }
+
+    const cart = await Cart.findOne({ user: userId });
+    if (!cart) return errorResponse(res, 'Không tìm thấy giỏ hàng', 404);
+
+    const itemIndex = cart.items.findIndex(item => item._id.toString() === itemId);
+    if (itemIndex === -1) return errorResponse(res, 'Không tìm thấy sản phẩm trong giỏ hàng', 404);
+
+    cart.items[itemIndex].quantity = quantity;
+    await cart.save();
+
+    const updatedCart = await Cart.findById(cart._id)
+      .populate('user', 'name email phone')
+      .populate('items.product', 'name images price brand')
+      .lean();
+
+    successResponse(res, { cart: updatedCart }, 'Cập nhật giỏ hàng thành công');
+  } catch (error) {
+    errorResponse(res, error.message, 500);
+  }
+};
+
+const deleteCartItem = async (req, res) => {
+  try {
+    const { userId, itemId } = req.params;
+
+    const cart = await Cart.findOne({ user: userId });
+    if (!cart) return errorResponse(res, 'Không tìm thấy giỏ hàng', 404);
+
+    const itemIndex = cart.items.findIndex(item => item._id.toString() === itemId);
+    if (itemIndex === -1) return errorResponse(res, 'Không tìm thấy sản phẩm trong giỏ hàng', 404);
+
+    cart.items.splice(itemIndex, 1);
+    await cart.save();
+
+    successResponse(res, null, 'Đã xóa sản phẩm khỏi giỏ hàng');
+  } catch (error) {
+    errorResponse(res, error.message, 500);
+  }
+};
+
+const clearUserCart = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const cart = await Cart.findOne({ user: userId });
+    if (!cart) return errorResponse(res, 'Không tìm thấy giỏ hàng', 404);
+
+    cart.items = [];
+    await cart.save();
+
+    successResponse(res, null, 'Đã xóa toàn bộ giỏ hàng');
+  } catch (error) {
+    errorResponse(res, error.message, 500);
+  }
+};
+
 module.exports = {
   getDashboardStats,
   getAllProducts,
@@ -462,6 +837,10 @@ module.exports = {
   refundOrder,
   getAllUsers,
   updateUserStatus,
+  createUser,
+  updateUser,
+  deleteUser,
+  resetUserPassword,
   getAllCoupons,
   createCoupon,
   updateCoupon,
@@ -469,7 +848,16 @@ module.exports = {
   getAllReviews,
   approveReview,
   deleteReview,
+  getFlaggedReviews,
+  approveReviewModeration,
+  rejectReviewModeration,
+  getModerationCategories,
   getRevenueReport,
   getProductReport,
-  getOrderReport
+  getOrderReport,
+  getAllCarts,
+  getCartByUser,
+  updateCartItem,
+  deleteCartItem,
+  clearUserCart
 };

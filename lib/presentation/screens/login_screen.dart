@@ -5,7 +5,7 @@ import '../widgets/custom_text_field.dart';
 import '../widgets/custom_button.dart';
 import '../view_models/auth_view_model.dart';
 import 'register_screen.dart';
-import 'product_list_screen.dart';
+import 'home_screen.dart';
 import 'forgot_password_screen.dart';
 import 'admin/admin_shell.dart';
 
@@ -86,7 +86,7 @@ class _LoginScreenState extends State<LoginScreen> {
       } else {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (context) => const ProductListScreen(),
+            builder: (context) => const HomeScreen(),
           ),
         );
       }

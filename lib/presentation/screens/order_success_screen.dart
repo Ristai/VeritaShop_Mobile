@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/utils/currency_formatter.dart';
 import '../../data/models/order_model.dart';
 import '../widgets/custom_button.dart';
 
@@ -66,7 +67,7 @@ class OrderSuccessScreen extends StatelessWidget {
                     const Divider(color: kBorderColor, height: 24),
                     _buildInfoRow(
                       'Tổng tiền',
-                      '${(order.total / 1000).toStringAsFixed(0)}K đ',
+                      formatVND(order.total),
                       valueColor: kAccentColor,
                     ),
                     const Divider(color: kBorderColor, height: 24),

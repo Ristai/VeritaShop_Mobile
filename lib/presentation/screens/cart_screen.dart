@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../data/models/cart_model.dart';
 import '../../data/repositories/cart_repository.dart';
+import '../../core/utils/currency_formatter.dart';
 import '../widgets/custom_button.dart';
 import '../../core/constants/app_colors.dart';
 
 class CartScreen extends StatefulWidget {
-  const CartScreen({super.key});
+  final bool embedded;
+
+  const CartScreen({super.key, this.embedded = false});
 
   @override
   State<CartScreen> createState() => _CartScreenState();
@@ -47,7 +50,7 @@ class _CartScreenState extends State<CartScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error loading cart: ${e.toString()}'),
+            content: Text('Lỗi tải giỏ hàng: ${e.toString()}'),
             backgroundColor: kRedColor,
           ),
         );
@@ -69,7 +72,7 @@ class _CartScreenState extends State<CartScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Cart updated successfully'),
+              content: Text('Cập nhật giỏ hàng thành công'),
               backgroundColor: kGreenColor,
             ),
           );
@@ -78,7 +81,7 @@ class _CartScreenState extends State<CartScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Failed to update cart'),
+              content: Text('Cập nhật giỏ hàng thất bại'),
               backgroundColor: kRedColor,
             ),
           );
@@ -88,7 +91,7 @@ class _CartScreenState extends State<CartScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error updating cart: ${e.toString()}'),
+            content: Text('Lỗi cập nhật giỏ hàng: ${e.toString()}'),
             backgroundColor: kRedColor,
           ),
         );
@@ -105,16 +108,16 @@ class _CartScreenState extends State<CartScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Remove Item'),
-        content: const Text('Are you sure you want to remove this item from cart?'),
+        title: const Text('Xóa sản phẩm'),
+        content: const Text('Bạn có chắc muốn xóa sản phẩm này?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: const Text('Hủy'),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Remove'),
+            child: const Text('Xóa'),
           ),
         ],
       ),
@@ -135,7 +138,7 @@ class _CartScreenState extends State<CartScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Item removed from cart'),
+              content: Text('Đã xóa sản phẩm'),
               backgroundColor: kGreenColor,
             ),
           );
@@ -144,7 +147,7 @@ class _CartScreenState extends State<CartScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Failed to remove item'),
+              content: Text('Xóa sản phẩm thất bại'),
               backgroundColor: kRedColor,
             ),
           );
@@ -154,7 +157,7 @@ class _CartScreenState extends State<CartScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error removing item: ${e.toString()}'),
+            content: Text('Lỗi xóa sản phẩm: ${e.toString()}'),
             backgroundColor: kRedColor,
           ),
         );
@@ -171,16 +174,16 @@ class _CartScreenState extends State<CartScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Clear Cart'),
-        content: const Text('Are you sure you want to remove all items from cart?'),
+        title: const Text('Xóa giỏ hàng'),
+        content: const Text('Bạn có chắc muốn xóa tất cả?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: const Text('Hủy'),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Clear'),
+            child: const Text('Xóa tất cả'),
           ),
         ],
       ),
@@ -201,7 +204,7 @@ class _CartScreenState extends State<CartScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Cart cleared successfully'),
+              content: Text('Đã xóa toàn bộ giỏ hàng'),
               backgroundColor: kGreenColor,
             ),
           );
@@ -210,7 +213,7 @@ class _CartScreenState extends State<CartScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Failed to clear cart'),
+              content: Text('Xóa giỏ hàng thất bại'),
               backgroundColor: kRedColor,
             ),
           );
@@ -220,7 +223,7 @@ class _CartScreenState extends State<CartScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error clearing cart: ${e.toString()}'),
+            content: Text('Lỗi xóa giỏ hàng: ${e.toString()}'),
             backgroundColor: kRedColor,
           ),
         );
@@ -238,9 +241,38 @@ class _CartScreenState extends State<CartScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final body = _isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : _cartItems.isEmpty
+            ? _buildEmptyCart()
+            : _buildCartContent();
+
+    // Nếu embedded, chỉ trả về body với bottom summary
+    if (widget.embedded) {
+      return Column(
+        children: [
+          // Clear cart button khi embedded
+          if (_cartItems.isNotEmpty)
+            Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 8, top: 4),
+                child: IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: _isUpdating ? null : _clearCart,
+                  tooltip: 'Xóa giỏ hàng',
+                ),
+              ),
+            ),
+          Expanded(child: body),
+          if (_cartItems.isNotEmpty) _buildBottomSummary(),
+        ],
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Cart'),
+        title: const Text('Giỏ hàng của tôi'),
         actions: [
           if (_cartItems.isNotEmpty)
             IconButton(
@@ -249,11 +281,7 @@ class _CartScreenState extends State<CartScreen> {
             ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _cartItems.isEmpty
-              ? _buildEmptyCart()
-              : _buildCartContent(),
+      body: body,
       bottomNavigationBar: _cartItems.isNotEmpty
           ? _buildBottomSummary()
           : null,
@@ -272,7 +300,7 @@ class _CartScreenState extends State<CartScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Your cart is empty',
+            'Giỏ hàng trống',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w500,
@@ -281,7 +309,7 @@ class _CartScreenState extends State<CartScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Add items to get started',
+            'Thêm sản phẩm để bắt đầu',
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey[500],
@@ -289,7 +317,7 @@ class _CartScreenState extends State<CartScreen> {
           ),
           const SizedBox(height: 24),
           CustomButton(
-            text: 'Continue Shopping',
+            text: 'Tiếp tục mua sắm',
             onPressed: () {
               Navigator.of(context).pop();
             },
@@ -348,14 +376,14 @@ class _CartScreenState extends State<CartScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Subtotal',
+                  'Tạm tính',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
                 Text(
-                  '${_cartSummary?.subtotal.toStringAsFixed(0) ?? '0'} đ',
+                  formatVND(_cartSummary?.subtotal ?? 0),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -368,14 +396,14 @@ class _CartScreenState extends State<CartScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Shipping',
+                  'Phí vận chuyển',
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.grey[600],
                   ),
                 ),
                 Text(
-                  '${_cartSummary?.shippingFee.toStringAsFixed(0) ?? '0'} đ',
+                  formatVND(_cartSummary?.shippingFee ?? 0),
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.grey[600],
@@ -388,14 +416,14 @@ class _CartScreenState extends State<CartScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Tax',
+                  'Thuế',
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.grey[600],
                   ),
                 ),
                 Text(
-                  '${_cartSummary?.tax.toStringAsFixed(0) ?? '0'} đ',
+                  formatVND(_cartSummary?.tax ?? 0),
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.grey[600],
@@ -408,14 +436,14 @@ class _CartScreenState extends State<CartScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Total',
+                  'Tổng cộng',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 Text(
-                  '${_cartSummary?.total.toStringAsFixed(0) ?? '0'} đ',
+                  formatVND(_cartSummary?.total ?? 0),
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -426,7 +454,7 @@ class _CartScreenState extends State<CartScreen> {
             ),
             const SizedBox(height: 16),
             CustomButton(
-              text: 'Proceed to Checkout',
+              text: 'Tiến hành thanh toán',
               onPressed: _isUpdating ? null : _navigateToCheckout,
             ),
           ],
@@ -500,7 +528,7 @@ class CartItemCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${cartItem.price.toStringAsFixed(0)} đ',
+                    formatVND(cartItem.price),
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,

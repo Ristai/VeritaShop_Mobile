@@ -4,7 +4,7 @@ import '../../core/constants/app_colors.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/custom_button.dart';
 import '../view_models/auth_view_model.dart';
-import 'product_list_screen.dart';
+import 'home_screen.dart';
 
 /// Màn hình đăng ký - Onboarding Journey
 class RegisterScreen extends StatefulWidget {
@@ -114,7 +114,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
-          builder: (context) => const ProductListScreen(),
+          builder: (context) => const HomeScreen(),
         ),
         (route) => false,
       );

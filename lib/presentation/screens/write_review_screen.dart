@@ -1,5 +1,8 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/network/api_service.dart';
 import '../../data/repositories/review_repository.dart';
 import '../widgets/custom_button.dart';
 
@@ -23,14 +26,148 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
   final TextEditingController _reviewController = TextEditingController();
   final TextEditingController _titleController = TextEditingController();
   final ReviewRepository _reviewRepository = ReviewRepository();
+  final ImagePicker _imagePicker = ImagePicker();
   int _rating = 5;
   bool _isSubmitting = false;
+  String _submitStatusText = '';
+
+  // Image state
+  final List<XFile> _selectedImages = [];
+  final Map<String, Uint8List> _imageBytes = {}; // Cache for web preview
+  static const int _maxImages = 5;
 
   @override
   void dispose() {
     _reviewController.dispose();
     _titleController.dispose();
     super.dispose();
+  }
+
+  void _showImageSourcePicker() {
+    final colors = AppColors.of(context);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: colors.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(Icons.photo_library, color: colors.primaryText),
+                title: Text('Chọn từ thư viện', style: TextStyle(color: colors.primaryText)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImages(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.camera_alt, color: colors.primaryText),
+                title: Text('Chụp ảnh', style: TextStyle(color: colors.primaryText)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImages(ImageSource.camera);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImages(ImageSource source) async {
+    try {
+      if (source == ImageSource.gallery) {
+        final images = await _imagePicker.pickMultiImage(
+          imageQuality: 80,
+          maxWidth: 1200,
+          maxHeight: 1200,
+        );
+        if (images.isNotEmpty) {
+          final remainingSlots = _maxImages - _selectedImages.length;
+          final imagesToAdd = images.take(remainingSlots).toList();
+          // Load bytes for preview on web
+          for (final img in imagesToAdd) {
+            _imageBytes[img.path] = await img.readAsBytes();
+          }
+          setState(() {
+            _selectedImages.addAll(imagesToAdd);
+          });
+          if (images.length > remainingSlots && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Chỉ thêm được $remainingSlots ảnh. Đã đạt giới hạn $_maxImages ảnh.'),
+                backgroundColor: kYellowColor,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        }
+      } else {
+        final image = await _imagePicker.pickImage(
+          source: source,
+          imageQuality: 80,
+          maxWidth: 1200,
+          maxHeight: 1200,
+        );
+        if (image != null) {
+          // Load bytes for preview on web
+          _imageBytes[image.path] = await image.readAsBytes();
+          setState(() {
+            _selectedImages.add(image);
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Không thể chọn ảnh: ${e.toString()}'),
+            backgroundColor: kRedColor,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  void _removeImage(int index) {
+    final path = _selectedImages[index].path;
+    setState(() {
+      _selectedImages.removeAt(index);
+      _imageBytes.remove(path);
+    });
+  }
+
+  Future<List<String>?> _uploadImages() async {
+    if (_selectedImages.isEmpty) return [];
+
+    try {
+      final imageDataList = <Map<String, dynamic>>[];
+      for (final image in _selectedImages) {
+        // Use cached bytes if available, otherwise read from file
+        final bytes = _imageBytes[image.path] ?? await image.readAsBytes();
+        imageDataList.add({
+          'bytes': bytes,
+          'filename': image.name,
+        });
+      }
+
+      final response = await ApiService.instance.uploadImages(imageDataList);
+      if (response['success'] == true && response['data'] != null) {
+        final images = response['data']['images'] as List;
+        return images.map((img) => img['url'] as String).toList();
+      }
+      return null;
+    } catch (e) {
+      print('Upload images error: $e');
+      return null;
+    }
   }
 
   Future<void> _submitReview() async {
@@ -45,21 +182,55 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
       return;
     }
 
-    setState(() => _isSubmitting = true);
+    setState(() {
+      _isSubmitting = true;
+      _submitStatusText = _selectedImages.isNotEmpty ? 'Đang tải ảnh lên...' : 'Đang gửi đánh giá...';
+    });
 
     try {
+      // Upload images first if any
+      List<String>? imageUrls;
+      if (_selectedImages.isNotEmpty) {
+        imageUrls = await _uploadImages();
+        if (imageUrls == null) {
+          if (mounted) {
+            setState(() {
+              _isSubmitting = false;
+              _submitStatusText = '';
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Không thể tải ảnh lên. Vui lòng thử lại.'),
+                backgroundColor: kRedColor,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+          return;
+        }
+        if (mounted) {
+          setState(() {
+            _submitStatusText = 'Đang gửi đánh giá...';
+          });
+        }
+      }
+
       final review = await _reviewRepository.createReview(
         productId: widget.productId,
         rating: _rating,
         text: _reviewController.text.trim(),
-        title: _titleController.text.trim().isNotEmpty 
-            ? _titleController.text.trim() 
+        title: _titleController.text.trim().isNotEmpty
+            ? _titleController.text.trim()
             : null,
+        images: imageUrls,
       );
 
       if (mounted) {
-        setState(() => _isSubmitting = false);
-        
+        setState(() {
+          _isSubmitting = false;
+          _submitStatusText = '';
+        });
+
         if (review != null) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -81,7 +252,10 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isSubmitting = false);
+        setState(() {
+          _isSubmitting = false;
+          _submitStatusText = '';
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Lỗi: ${e.toString()}'),
@@ -119,9 +293,21 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
             _buildTitleInput(colors),
             const SizedBox(height: 24),
             _buildReviewInput(colors),
+            const SizedBox(height: 24),
+            _buildImageSection(colors),
             const SizedBox(height: 32),
+            if (_isSubmitting && _submitStatusText.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Center(
+                  child: Text(
+                    _submitStatusText,
+                    style: TextStyle(color: colors.secondaryText),
+                  ),
+                ),
+              ),
             CustomButton(
-              text: 'Gửi đánh giá',
+              text: _isSubmitting ? _submitStatusText : 'Gửi đánh giá',
               onPressed: _isSubmitting ? null : _submitReview,
               isLoading: _isSubmitting,
             ),
@@ -324,6 +510,136 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
             ),
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildImageSection(AppColors colors) {
+    final bool canAddMore = _selectedImages.length < _maxImages;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Thêm hình ảnh (tùy chọn)',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: colors.primaryText,
+              ),
+            ),
+            Text(
+              '${_selectedImages.length}/$_maxImages',
+              style: TextStyle(
+                color: colors.secondaryText,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 100,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: [
+              // Add button
+              if (canAddMore)
+                GestureDetector(
+                  onTap: _showImageSourcePicker,
+                  child: Container(
+                    width: 100,
+                    height: 100,
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(
+                      color: colors.card,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: colors.border, style: BorderStyle.solid),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.add_photo_alternate_outlined, color: kAccentColor, size: 32),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Thêm ảnh',
+                          style: TextStyle(
+                            color: kAccentColor,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              // Selected images
+              ...List.generate(_selectedImages.length, (index) {
+                final imagePath = _selectedImages[index].path;
+                final bytes = _imageBytes[imagePath];
+                return Stack(
+                  children: [
+                    Container(
+                      width: 100,
+                      height: 100,
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: colors.border),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: bytes != null
+                            ? Image.memory(
+                                bytes,
+                                fit: BoxFit.cover,
+                              )
+                            : Container(
+                                color: colors.card,
+                                child: const Center(
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 4,
+                      right: 12,
+                      child: GestureDetector(
+                        onTap: () => _removeImage(index),
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.6),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }),
+            ],
+          ),
+        ),
+        if (!canAddMore)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              'Đã đạt giới hạn $_maxImages ảnh',
+              style: TextStyle(
+                color: kYellowColor,
+                fontSize: 12,
+              ),
+            ),
+          ),
       ],
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/utils/currency_formatter.dart';
 import '../../data/models/order_model.dart';
 import '../view_models/order_view_model.dart';
 
@@ -193,7 +194,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                             ),
                           ),
                           Text(
-                            '${(item.totalPrice / 1000).toStringAsFixed(0)}K đ',
+                            formatVND(item.totalPrice),
                             style: TextStyle(
                               fontWeight: FontWeight.w500,
                               fontSize: 13,
@@ -234,7 +235,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                       ),
                     ),
                     Text(
-                      '${(order.total / 1000).toStringAsFixed(0)}K đ',
+                      formatVND(order.total),
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -531,14 +532,14 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                   style: TextStyle(fontWeight: FontWeight.w500, color: colors.primaryText),
                                 ),
                                 Text(
-                                  '${(item.price / 1000).toStringAsFixed(0)}K đ x ${item.quantity}',
+                                  '${formatVND(item.price)} x ${item.quantity}',
                                   style: TextStyle(color: colors.secondaryText),
                                 ),
                               ],
                             ),
                           ),
                           Text(
-                            '${(item.totalPrice / 1000).toStringAsFixed(0)}K đ',
+                            formatVND(item.totalPrice),
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               color: kAccentColor,
@@ -556,15 +557,15 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                   ),
                   child: Column(
                     children: [
-                      _buildSummaryRow('Tạm tính', '${(order.subtotal / 1000).toStringAsFixed(0)}K đ', colors),
+                      _buildSummaryRow('Tạm tính', formatVND(order.subtotal), colors),
                       const SizedBox(height: 8),
-                      _buildSummaryRow('Phí vận chuyển', '${(order.shippingFee / 1000).toStringAsFixed(0)}K đ', colors),
+                      _buildSummaryRow('Phí vận chuyển', formatVND(order.shippingFee), colors),
                       const SizedBox(height: 8),
-                      _buildSummaryRow('Thuế', '${(order.tax / 1000).toStringAsFixed(0)}K đ', colors),
+                      _buildSummaryRow('Thuế', formatVND(order.tax), colors),
                       Divider(color: colors.border, height: 24),
                       _buildSummaryRow(
                         'Tổng cộng',
-                        '${(order.total / 1000).toStringAsFixed(0)}K đ',
+                        formatVND(order.total),
                         colors,
                         isBold: true,
                       ),

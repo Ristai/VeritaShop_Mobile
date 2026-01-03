@@ -99,6 +99,59 @@ class AdminRepository {
     return response['data']?['user'] ?? {};
   }
 
+  Future<Map<String, dynamic>> createUser(Map<String, dynamic> data) async {
+    final response = await _api.createAdminUser(data);
+    return response['data']?['user'] ?? {};
+  }
+
+  Future<Map<String, dynamic>> updateUser(String id, Map<String, dynamic> data) async {
+    final response = await _api.updateAdminUser(id, data);
+    return response['data']?['user'] ?? {};
+  }
+
+  Future<void> deleteUser(String id) async {
+    await _api.deleteAdminUser(id);
+  }
+
+  Future<String> resetUserPassword(String id) async {
+    final response = await _api.resetAdminUserPassword(id);
+    return response['data']?['email'] ?? '';
+  }
+
+  // Carts
+  Future<Map<String, dynamic>> getCarts({
+    int page = 1,
+    int limit = 20,
+    String? search,
+  }) async {
+    final response = await _api.getAdminCarts(
+      page: page,
+      limit: limit,
+      search: search,
+    );
+    return {
+      'carts': response['data']?['carts'] ?? [],
+      'pagination': response['data']?['pagination'],
+    };
+  }
+
+  Future<Map<String, dynamic>> getCartByUser(String userId) async {
+    final response = await _api.getAdminCartByUser(userId);
+    return response['data']?['cart'] ?? {};
+  }
+
+  Future<void> updateCartItem(String userId, String itemId, int quantity) async {
+    await _api.updateAdminCartItem(userId, itemId, quantity);
+  }
+
+  Future<void> deleteCartItem(String userId, String itemId) async {
+    await _api.deleteAdminCartItem(userId, itemId);
+  }
+
+  Future<void> clearUserCart(String userId) async {
+    await _api.clearAdminUserCart(userId);
+  }
+
   // Coupons
   Future<List<Map<String, dynamic>>> getCoupons() async {
     final response = await _api.getAdminCoupons();
@@ -124,12 +177,31 @@ class AdminRepository {
     int page = 1,
     int limit = 20,
     String? status,
+    bool? flagged,
     String sort = '-createdAt',
   }) async {
     final response = await _api.getAdminReviews(
       page: page,
       limit: limit,
       status: status,
+      flagged: flagged,
+      sort: sort,
+    );
+    return {
+      'reviews': response['data']?['reviews'] ?? [],
+      'pagination': response['data']?['pagination'],
+      'flaggedCount': response['data']?['flaggedCount'] ?? 0,
+    };
+  }
+
+  Future<Map<String, dynamic>> getFlaggedReviews({
+    int page = 1,
+    int limit = 20,
+    String sort = '-createdAt',
+  }) async {
+    final response = await _api.getAdminFlaggedReviews(
+      page: page,
+      limit: limit,
       sort: sort,
     );
     return {
@@ -142,8 +214,24 @@ class AdminRepository {
     await _api.approveAdminReview(id);
   }
 
+  Future<Map<String, dynamic>> approveReviewModeration(String id, {String? note}) async {
+    final response = await _api.approveAdminReviewModeration(id, note: note);
+    return response['data']?['review'] ?? {};
+  }
+
+  Future<Map<String, dynamic>> rejectReviewModeration(String id, {String? note}) async {
+    final response = await _api.rejectAdminReviewModeration(id, note: note);
+    return response['data']?['review'] ?? {};
+  }
+
   Future<void> deleteReview(String id) async {
     await _api.deleteAdminReview(id);
+  }
+
+  Future<Map<String, String>> getModerationCategories() async {
+    final response = await _api.getModerationCategories();
+    final categories = response['data']?['categories'] ?? {};
+    return Map<String, String>.from(categories);
   }
 
   // Reports

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../data/models/cart_model.dart';
 import '../../data/repositories/cart_repository.dart';
+import '../../core/services/local_notification_service.dart';
 
 /// ViewModel cho giỏ hàng sử dụng ChangeNotifier
 class CartViewModel extends ChangeNotifier {
   final CartRepository _cartRepository;
-  
+  final LocalNotificationService _notificationService = LocalNotificationService();
+
   List<CartModel> _cartItems = [];
   CartSummary? _cartSummary;
   bool _isLoading = false;
@@ -62,7 +64,7 @@ class CartViewModel extends ChangeNotifier {
         quantity: quantity,
         color: color,
       );
-      
+
       if (result != null) {
         _cartItems = result.items;
         _cartSummary = CartSummary(
@@ -73,9 +75,15 @@ class CartViewModel extends ChangeNotifier {
           total: result.total,
         );
         notifyListeners();
+
+        // Lên lịch nhắc nhở giỏ hàng sau 2 giờ nếu chưa checkout
+        if (_cartItems.isNotEmpty) {
+          await _notificationService.scheduleCartReminder(itemCount: itemCount);
+        }
+
         return true;
       }
-      
+
       return false;
     } catch (e) {
       _setError(e.toString());

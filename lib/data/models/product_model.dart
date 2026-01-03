@@ -1,4 +1,6 @@
 /// Model dữ liệu sản phẩm điện thoại
+import 'package:intl/intl.dart';
+
 class ProductModel {
   final String id;
   final String name;
@@ -61,23 +63,15 @@ class ProductModel {
 
   /// Format giá tiền theo định dạng VNĐ
   String get formattedPrice {
-    if (price >= 1000000) {
-      return '${(price / 1000000).toStringAsFixed(1)}M đ';
-    } else if (price >= 1000) {
-      return '${(price / 1000).toStringAsFixed(0)}K đ';
-    }
-    return '${price.toStringAsFixed(0)} đ';
+    final formatter = NumberFormat('#,###', 'vi_VN');
+    return '${formatter.format(price.round())} VND';
   }
 
   /// Format giá gốc
   String get formattedOriginalPrice {
     if (originalPrice == null) return '';
-    if (originalPrice! >= 1000000) {
-      return '${(originalPrice! / 1000000).toStringAsFixed(1)}M đ';
-    } else if (originalPrice! >= 1000) {
-      return '${(originalPrice! / 1000).toStringAsFixed(0)}K đ';
-    }
-    return '${originalPrice!.toStringAsFixed(0)} đ';
+    final formatter = NumberFormat('#,###', 'vi_VN');
+    return '${formatter.format(originalPrice!.round())} VND';
   }
 
   /// Tạo copy với các giá trị mới

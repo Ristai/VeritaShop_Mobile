@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/currency_formatter.dart';
 import '../../view_models/admin/admin_dashboard_view_model.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
@@ -21,14 +22,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   String _formatCurrency(int amount) {
-    if (amount >= 1000000000) {
-      return '${(amount / 1000000000).toStringAsFixed(1)}B đ';
-    } else if (amount >= 1000000) {
-      return '${(amount / 1000000).toStringAsFixed(1)}M đ';
-    } else if (amount >= 1000) {
-      return '${(amount / 1000).toStringAsFixed(0)}K đ';
-    }
-    return '${NumberFormat('#,###').format(amount)} đ';
+    return formatVND(amount.toDouble());
   }
 
   @override

@@ -13,6 +13,7 @@ class ReviewRepository {
     String sort = 'newest',
     int? rating,
   }) async {
+    print('ReviewRepository: Getting reviews for product $productId');
     final response = await _apiService.getProductReviews(
       productId,
       page: page,
@@ -20,12 +21,32 @@ class ReviewRepository {
       rating: rating,
     );
 
-    if (response['success'] == true && response['data'] != null) {
-      final List<dynamic> data = response['data'];
-      final pagination = response['pagination'] ?? {};
-      final summary = response['summary'] ?? {};
+    print('ReviewRepository: Response success=${response['success']}, data=${response['data']?.runtimeType}');
 
-      final reviews = data.map((json) => ReviewModel.fromApiMap(json)).toList();
+    if (response['success'] == true && response['data'] != null) {
+      final data = response['data'];
+      // Handle both formats: {reviews: [...]} or direct array
+      List<dynamic> reviewsList = [];
+      if (data is Map && data['reviews'] != null) {
+        reviewsList = data['reviews'] as List;
+      } else if (data is List) {
+        reviewsList = data;
+      }
+
+      final pagination = response['pagination'] ?? {};
+      final summary = data is Map ? (data['summary'] ?? {}) : (response['summary'] ?? {});
+
+      print('ReviewRepository: Found ${reviewsList.length} reviews');
+
+      final reviews = reviewsList.map((json) {
+        try {
+          return ReviewModel.fromApiMap(json);
+        } catch (e) {
+          print('Error parsing review: $e');
+          print('Review data: $json');
+          rethrow;
+        }
+      }).toList();
 
       return ReviewListResult(
         reviews: reviews,
@@ -33,10 +54,11 @@ class ReviewRepository {
         totalPages: pagination['totalPages'] ?? 1,
         total: pagination['total'] ?? reviews.length,
         averageRating: (summary['averageRating'] ?? 0).toDouble(),
-        totalReviews: summary['totalReviews'] ?? 0,
+        totalReviews: summary['totalReviews'] ?? reviews.length,
       );
     }
 
+    print('ReviewRepository: No data, returning empty');
     return ReviewListResult(
       reviews: [],
       page: 1,
@@ -93,10 +115,17 @@ class ReviewRepository {
       );
 
       if (response['success'] == true && response['data'] != null) {
-        return ReviewModel.fromApiMap(response['data']);
+        try {
+          return ReviewModel.fromApiMap(response['data']);
+        } catch (parseError) {
+          print('Error parsing review: $parseError');
+          print('Response data: ${response['data']}');
+          rethrow;
+        }
       }
       return null;
     } catch (e) {
+      print('createReview error: $e');
       return null;
     }
   }

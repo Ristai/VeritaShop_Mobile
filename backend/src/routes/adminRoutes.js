@@ -12,6 +12,10 @@ const {
   refundOrder,
   getAllUsers,
   updateUserStatus,
+  createUser,
+  updateUser,
+  deleteUser,
+  resetUserPassword,
   getAllCoupons,
   createCoupon,
   updateCoupon,
@@ -19,9 +23,18 @@ const {
   getAllReviews,
   approveReview,
   deleteReview,
+  getFlaggedReviews,
+  approveReviewModeration,
+  rejectReviewModeration,
+  getModerationCategories,
   getRevenueReport,
   getProductReport,
-  getOrderReport
+  getOrderReport,
+  getAllCarts,
+  getCartByUser,
+  updateCartItem,
+  deleteCartItem,
+  clearUserCart
 } = require('../controllers/adminController');
 
 // All routes require admin authentication
@@ -43,7 +56,18 @@ router.post('/orders/:id/refund', refundOrder);
 
 // Users
 router.get('/users', getAllUsers);
+router.post('/users', createUser);
+router.put('/users/:id', updateUser);
 router.put('/users/:id/status', updateUserStatus);
+router.delete('/users/:id', deleteUser);
+router.post('/users/:id/reset-password', resetUserPassword);
+
+// Carts
+router.get('/carts', getAllCarts);
+router.get('/carts/:userId', getCartByUser);
+router.put('/carts/:userId/items/:itemId', updateCartItem);
+router.delete('/carts/:userId/items/:itemId', deleteCartItem);
+router.delete('/carts/:userId', clearUserCart);
 
 // Coupons
 router.get('/coupons', getAllCoupons);
@@ -53,7 +77,11 @@ router.delete('/coupons/:id', deleteCoupon);
 
 // Reviews
 router.get('/reviews', getAllReviews);
+router.get('/reviews/flagged', getFlaggedReviews);
+router.get('/reviews/moderation-categories', getModerationCategories);
 router.put('/reviews/:id/approve', approveReview);
+router.put('/reviews/:id/moderation/approve', approveReviewModeration);
+router.put('/reviews/:id/moderation/reject', rejectReviewModeration);
 router.delete('/reviews/:id', deleteReview);
 
 // Reports
