@@ -4,12 +4,14 @@ class SentimentAnalysisItem {
   final String sentiment;
   final double confidence;
   final Map<String, double> scores;
+  final bool aspectOnly; // True if aspect has no sentiment (like "Others")
 
   SentimentAnalysisItem({
     required this.aspect,
     required this.sentiment,
     this.confidence = 0.0,
     this.scores = const {},
+    this.aspectOnly = false,
   });
 
   factory SentimentAnalysisItem.fromMap(Map<String, dynamic> map) {
@@ -24,13 +26,21 @@ class SentimentAnalysisItem {
       };
     }
 
+    final sentiment = map['sentiment']?.toString() ?? 'neutral';
+    final isAspectOnly = map['aspectOnly'] == true || sentiment == 'none';
+
     return SentimentAnalysisItem(
       aspect: map['aspect']?.toString() ?? 'General',
-      sentiment: map['sentiment']?.toString() ?? 'neutral',
+      sentiment: sentiment,
       confidence: (map['confidence'] ?? 0).toDouble(),
       scores: parsedScores,
+      aspectOnly: isAspectOnly,
     );
   }
+
+  /// Check if this aspect has sentiment analysis
+  /// "Others" aspect only has aspect detection, no sentiment
+  bool get hasSentiment => !aspectOnly && sentiment != 'none' && aspect != 'Others';
 
   /// Get Vietnamese name for aspect
   String get aspectVietnamese {
@@ -45,12 +55,16 @@ class SentimentAnalysisItem {
       'Shop_Service': 'Dịch vụ',
       'Shipping': 'Giao hàng',
       'General': 'Chung',
+      'Others': 'Khác',
     };
     return aspectMap[aspect] ?? aspect;
   }
 
   /// Get Vietnamese name for sentiment
   String get sentimentVietnamese {
+    if (aspectOnly || sentiment == 'none') {
+      return 'Không xác định';
+    }
     switch (sentiment) {
       case 'positive':
         return 'Tích cực';
@@ -59,6 +73,84 @@ class SentimentAnalysisItem {
       default:
         return 'Trung tính';
     }
+  }
+}
+
+/// Content moderation result from API
+class ModerationResult {
+  final String? id;
+  final String? model;
+  final bool flagged;
+  final Map<String, bool> categories;
+  final Map<String, double> categoryScores;
+  final DateTime? checkedAt;
+
+  ModerationResult({
+    this.id,
+    this.model,
+    this.flagged = false,
+    this.categories = const {},
+    this.categoryScores = const {},
+    this.checkedAt,
+  });
+
+  factory ModerationResult.fromMap(Map<String, dynamic>? map) {
+    if (map == null) {
+      return ModerationResult();
+    }
+
+    // Parse categories
+    Map<String, bool> parsedCategories = {};
+    if (map['categories'] != null && map['categories'] is Map) {
+      final categories = map['categories'] as Map;
+      categories.forEach((key, value) {
+        parsedCategories[key.toString()] = value == true;
+      });
+    }
+
+    // Parse category scores
+    Map<String, double> parsedScores = {};
+    if (map['categoryScores'] != null && map['categoryScores'] is Map) {
+      final scores = map['categoryScores'] as Map;
+      scores.forEach((key, value) {
+        parsedScores[key.toString()] = (value ?? 0).toDouble();
+      });
+    }
+
+    return ModerationResult(
+      id: map['id']?.toString(),
+      model: map['model']?.toString(),
+      flagged: map['flagged'] == true,
+      categories: parsedCategories,
+      categoryScores: parsedScores,
+      checkedAt: map['checkedAt'] != null
+          ? DateTime.tryParse(map['checkedAt'].toString())
+          : null,
+    );
+  }
+
+  /// Get flagged category names in Vietnamese
+  List<String> get flaggedCategoriesVietnamese {
+    const categoryMap = {
+      'harassment': 'Quấy rối',
+      'harassment/threatening': 'Quấy rối/Đe dọa',
+      'hate': 'Thù ghét',
+      'hate/threatening': 'Thù ghét/Đe dọa',
+      'illicit': 'Bất hợp pháp',
+      'illicit/violent': 'Bất hợp pháp/Bạo lực',
+      'self-harm': 'Tự gây hại',
+      'self-harm/intent': 'Tự gây hại/Ý định',
+      'self-harm/instructions': 'Tự gây hại/Hướng dẫn',
+      'sexual': 'Nội dung người lớn',
+      'sexual/minors': 'Nội dung trẻ em',
+      'violence': 'Bạo lực',
+      'violence/graphic': 'Bạo lực/Hình ảnh',
+    };
+
+    return categories.entries
+        .where((entry) => entry.value == true)
+        .map((entry) => categoryMap[entry.key] ?? entry.key)
+        .toList();
   }
 }
 
@@ -81,6 +173,12 @@ class ReviewModel {
   final bool isLiked;
   final DateTime createdAt;
   final List<SentimentAnalysisItem> sentimentAnalysis;
+  // Moderation fields
+  final bool isFlagged;
+  final String moderationStatus; // 'pending', 'approved', 'rejected'
+  final ModerationResult? moderationResult;
+  final String? moderationNote;
+  final List<String> flaggedCategoriesVietnamese;
 
   ReviewModel({
     required this.id,
@@ -100,7 +198,33 @@ class ReviewModel {
     this.isLiked = false,
     required this.createdAt,
     this.sentimentAnalysis = const [],
+    // Moderation defaults
+    this.isFlagged = false,
+    this.moderationStatus = 'approved',
+    this.moderationResult,
+    this.moderationNote,
+    this.flaggedCategoriesVietnamese = const [],
   });
+
+  /// Check if review is pending moderation
+  bool get isPendingModeration => moderationStatus == 'pending';
+
+  /// Check if review was rejected
+  bool get isRejected => moderationStatus == 'rejected';
+
+  /// Get moderation status display text in Vietnamese
+  String get moderationStatusVietnamese {
+    switch (moderationStatus) {
+      case 'pending':
+        return 'Đang chờ duyệt';
+      case 'approved':
+        return 'Đã duyệt';
+      case 'rejected':
+        return 'Đã từ chối';
+      default:
+        return 'Không xác định';
+    }
+  }
 
   /// Format thời gian đăng (ví dụ: "2 phút trước")
   String get timeAgo {
@@ -172,6 +296,19 @@ class ReviewModel {
           .reduce((a, b) => a + b) / sentimentList.length;
     }
 
+    // Parse moderation result
+    final moderationResult = map['moderationResult'] != null
+        ? ModerationResult.fromMap(map['moderationResult'] as Map<String, dynamic>)
+        : null;
+
+    // Get flagged categories from API response or from moderation result
+    List<String> flaggedCategories = [];
+    if (map['flaggedCategoriesVietnamese'] != null && map['flaggedCategoriesVietnamese'] is List) {
+      flaggedCategories = List<String>.from(map['flaggedCategoriesVietnamese']);
+    } else if (moderationResult != null) {
+      flaggedCategories = moderationResult.flaggedCategoriesVietnamese;
+    }
+
     return ReviewModel(
       id: map['_id']?.toString() ?? map['id']?.toString() ?? '',
       userId: user['_id']?.toString() ?? user['id']?.toString() ?? map['userId']?.toString() ?? '',
@@ -192,6 +329,12 @@ class ReviewModel {
           ? DateTime.parse(map['createdAt'])
           : DateTime.now(),
       sentimentAnalysis: sentimentList,
+      // Moderation fields
+      isFlagged: map['isFlagged'] == true,
+      moderationStatus: map['moderationStatus']?.toString() ?? 'approved',
+      moderationResult: moderationResult,
+      moderationNote: map['moderationNote']?.toString(),
+      flaggedCategoriesVietnamese: flaggedCategories,
     );
   }
 
@@ -233,6 +376,11 @@ class ReviewModel {
     bool? isLiked,
     DateTime? createdAt,
     List<SentimentAnalysisItem>? sentimentAnalysis,
+    bool? isFlagged,
+    String? moderationStatus,
+    ModerationResult? moderationResult,
+    String? moderationNote,
+    List<String>? flaggedCategoriesVietnamese,
   }) {
     return ReviewModel(
       id: id ?? this.id,
@@ -252,6 +400,11 @@ class ReviewModel {
       isLiked: isLiked ?? this.isLiked,
       createdAt: createdAt ?? this.createdAt,
       sentimentAnalysis: sentimentAnalysis ?? this.sentimentAnalysis,
+      isFlagged: isFlagged ?? this.isFlagged,
+      moderationStatus: moderationStatus ?? this.moderationStatus,
+      moderationResult: moderationResult ?? this.moderationResult,
+      moderationNote: moderationNote ?? this.moderationNote,
+      flaggedCategoriesVietnamese: flaggedCategoriesVietnamese ?? this.flaggedCategoriesVietnamese,
     );
   }
 }

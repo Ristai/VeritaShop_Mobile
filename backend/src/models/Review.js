@@ -48,11 +48,11 @@ const reviewSchema = new mongoose.Schema({
     aspect: {
       type: String,
       enum: ['Battery', 'Camera', 'Performance', 'Display', 'Design',
-             'Packaging', 'Price', 'Shop_Service', 'Shipping', 'General'],
+             'Packaging', 'Price', 'Shop_Service', 'Shipping', 'General', 'Others'],
     },
     sentiment: {
       type: String,
-      enum: ['positive', 'negative', 'neutral'],
+      enum: ['positive', 'negative', 'neutral', 'none'],
     },
     confidence: {
       type: Number,
@@ -63,11 +63,66 @@ const reviewSchema = new mongoose.Schema({
       negative: { type: Number, default: 0 },
       neutral: { type: Number, default: 0 },
     },
+    aspectOnly: {
+      type: Boolean,
+      default: false,
+    },
   }],
   overallSentiment: {
     type: String,
     enum: ['positive', 'negative', 'neutral', 'mixed'],
     default: 'neutral',
+  },
+  // Content Moderation fields
+  isFlagged: {
+    type: Boolean,
+    default: false,
+  },
+  moderationStatus: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'approved',
+  },
+  moderationResult: {
+    id: String,
+    model: String,
+    flagged: Boolean,
+    categories: {
+      harassment: Boolean,
+      'harassment/threatening': Boolean,
+      hate: Boolean,
+      'hate/threatening': Boolean,
+      illicit: Boolean,
+      'illicit/violent': Boolean,
+      'self-harm': Boolean,
+      'self-harm/intent': Boolean,
+      'self-harm/instructions': Boolean,
+      sexual: Boolean,
+      'sexual/minors': Boolean,
+      violence: Boolean,
+      'violence/graphic': Boolean,
+    },
+    categoryScores: {
+      harassment: Number,
+      'harassment/threatening': Number,
+      hate: Number,
+      'hate/threatening': Number,
+      illicit: Number,
+      'illicit/violent': Number,
+      'self-harm': Number,
+      'self-harm/intent': Number,
+      'self-harm/instructions': Number,
+      sexual: Number,
+      'sexual/minors': Number,
+      violence: Number,
+      'violence/graphic': Number,
+    },
+    checkedAt: Date,
+  },
+  moderationNote: {
+    type: String,
+    trim: true,
+    maxlength: [500, 'Ghi chú không quá 500 ký tự'],
   },
 }, {
   timestamps: true,
@@ -79,6 +134,9 @@ const reviewSchema = new mongoose.Schema({
 reviewSchema.index({ user: 1, product: 1 }); // Non-unique index for queries
 reviewSchema.index({ product: 1, createdAt: -1 });
 reviewSchema.index({ rating: 1 });
+// Moderation indexes for admin queries
+reviewSchema.index({ isFlagged: 1, createdAt: -1 });
+reviewSchema.index({ moderationStatus: 1, createdAt: -1 });
 
 // Static method to calculate average rating for a product
 reviewSchema.statics.calcAverageRating = async function(productId) {

@@ -177,12 +177,31 @@ class AdminRepository {
     int page = 1,
     int limit = 20,
     String? status,
+    bool? flagged,
     String sort = '-createdAt',
   }) async {
     final response = await _api.getAdminReviews(
       page: page,
       limit: limit,
       status: status,
+      flagged: flagged,
+      sort: sort,
+    );
+    return {
+      'reviews': response['data']?['reviews'] ?? [],
+      'pagination': response['data']?['pagination'],
+      'flaggedCount': response['data']?['flaggedCount'] ?? 0,
+    };
+  }
+
+  Future<Map<String, dynamic>> getFlaggedReviews({
+    int page = 1,
+    int limit = 20,
+    String sort = '-createdAt',
+  }) async {
+    final response = await _api.getAdminFlaggedReviews(
+      page: page,
+      limit: limit,
       sort: sort,
     );
     return {
@@ -195,8 +214,24 @@ class AdminRepository {
     await _api.approveAdminReview(id);
   }
 
+  Future<Map<String, dynamic>> approveReviewModeration(String id, {String? note}) async {
+    final response = await _api.approveAdminReviewModeration(id, note: note);
+    return response['data']?['review'] ?? {};
+  }
+
+  Future<Map<String, dynamic>> rejectReviewModeration(String id, {String? note}) async {
+    final response = await _api.rejectAdminReviewModeration(id, note: note);
+    return response['data']?['review'] ?? {};
+  }
+
   Future<void> deleteReview(String id) async {
     await _api.deleteAdminReview(id);
+  }
+
+  Future<Map<String, String>> getModerationCategories() async {
+    final response = await _api.getModerationCategories();
+    final categories = response['data']?['categories'] ?? {};
+    return Map<String, String>.from(categories);
   }
 
   // Reports

@@ -3,6 +3,7 @@ const Product = require('../models/Product');
 const Order = require('../models/Order');
 const { successResponse, errorResponse, paginatedResponse } = require('../utils/response');
 const { analyzeSentiment } = require('../utils/absaService');
+const { moderateContent, shouldFlag } = require('../utils/moderationService');
 
 // @desc    Get reviews for a product
 // @route   GET /api/reviews/product/:productId
@@ -132,7 +133,30 @@ const createReview = async (req, res, next) => {
       // Continue without sentiment - graceful degradation
     }
 
-    // Create review with sentiment data
+    // Moderate content using external API (non-blocking)
+    let moderationData = {
+      isFlagged: false,
+      moderationStatus: 'approved',
+      moderationResult: null,
+    };
+    try {
+      const moderationResult = await moderateContent(text, images || []);
+      if (moderationResult) {
+        const isFlagged = shouldFlag(moderationResult);
+        moderationData = {
+          isFlagged,
+          moderationStatus: isFlagged ? 'pending' : 'approved',
+          moderationResult,
+        };
+      }
+    } catch (moderationError) {
+      console.error('Content moderation failed:', moderationError.message);
+      // Continue without moderation - graceful degradation
+      // Set to pending so admin can review manually
+      moderationData.moderationStatus = 'pending';
+    }
+
+    // Create review with sentiment data and moderation results
     const review = await Review.create({
       user: req.user._id,
       product: productId,
@@ -143,6 +167,9 @@ const createReview = async (req, res, next) => {
       isVerifiedPurchase: !!hasPurchased,
       sentimentAnalysis: sentimentData.sentimentAnalysis,
       overallSentiment: sentimentData.overallSentiment,
+      isFlagged: moderationData.isFlagged,
+      moderationStatus: moderationData.moderationStatus,
+      moderationResult: moderationData.moderationResult,
     });
 
     // Populate user info
@@ -169,11 +196,35 @@ const updateReview = async (req, res, next) => {
       return errorResponse(res, 'Không tìm thấy đánh giá', 404, 'REVIEW_NOT_FOUND');
     }
 
+    // Check if content changed (text or images)
+    const contentChanged = (text && text !== review.text) ||
+                          (images && JSON.stringify(images) !== JSON.stringify(review.images));
+
     // Update fields
     if (rating) review.rating = rating;
     if (title !== undefined) review.title = title;
     if (text) review.text = text;
     if (images) review.images = images;
+
+    // Re-moderate if content changed
+    if (contentChanged) {
+      try {
+        const newText = text || review.text;
+        const newImages = images || review.images;
+        const moderationResult = await moderateContent(newText, newImages);
+        if (moderationResult) {
+          const isFlagged = shouldFlag(moderationResult);
+          review.isFlagged = isFlagged;
+          review.moderationStatus = isFlagged ? 'pending' : 'approved';
+          review.moderationResult = moderationResult;
+          review.moderationNote = null; // Clear previous admin note
+        }
+      } catch (moderationError) {
+        console.error('Re-moderation failed:', moderationError.message);
+        // Set to pending so admin can review manually
+        review.moderationStatus = 'pending';
+      }
+    }
 
     await review.save();
     await review.populate('user', 'name avatar');

@@ -44,22 +44,26 @@ class SentimentBadge extends StatelessWidget {
   }
 
   Widget _buildCompactBadge() {
+    // For aspectOnly items (like "Others"), use neutral color
+    final color = item.hasSentiment ? _sentimentColor : Colors.grey;
+    final icon = item.hasSentiment ? _sentimentIcon : Icons.label_outline;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: _sentimentColor.withValues(alpha: 0.15),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _sentimentColor.withValues(alpha: 0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(_sentimentIcon, size: 12, color: _sentimentColor),
+          Icon(icon, size: 12, color: color),
           const SizedBox(width: 4),
           Text(
             item.aspectVietnamese,
             style: TextStyle(
-              color: _sentimentColor,
+              color: color,
               fontSize: 11,
               fontWeight: FontWeight.w500,
             ),
@@ -70,39 +74,55 @@ class SentimentBadge extends StatelessWidget {
   }
 
   Widget _buildFullBadge() {
+    // For aspectOnly items (like "Others"), don't show sentiment text
+    final showSentimentText = item.hasSentiment;
+    // Use grey color for aspects without sentiment
+    final color = item.hasSentiment ? _sentimentColor : Colors.grey;
+    final icon = item.hasSentiment ? _sentimentIcon : Icons.label_outline;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: _sentimentColor.withValues(alpha: 0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _sentimentColor.withValues(alpha: 0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(_sentimentIcon, size: 14, color: _sentimentColor),
+          Icon(icon, size: 14, color: color),
           const SizedBox(width: 6),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                item.aspectVietnamese,
-                style: TextStyle(
-                  color: _sentimentColor,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
+          if (showSentimentText)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  item.aspectVietnamese,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              Text(
-                item.sentimentVietnamese,
-                style: TextStyle(
-                  color: _sentimentColor.withValues(alpha: 0.8),
-                  fontSize: 10,
+                Text(
+                  item.sentimentVietnamese,
+                  style: TextStyle(
+                    color: color.withValues(alpha: 0.8),
+                    fontSize: 10,
+                  ),
                 ),
+              ],
+            )
+          else
+            Text(
+              item.aspectVietnamese,
+              style: TextStyle(
+                color: color,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
               ),
-            ],
-          ),
+            ),
         ],
       ),
     );
@@ -128,6 +148,8 @@ class SentimentBadgeList extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    // Show all aspects (including "Others" which has aspectOnly=true)
+    // But "Others" won't display sentiment text
     final displayItems = sentimentAnalysis.take(maxItems).toList();
     final remainingCount = sentimentAnalysis.length - maxItems;
 

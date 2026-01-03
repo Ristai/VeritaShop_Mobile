@@ -602,6 +602,7 @@ class ApiService {
     int page = 1,
     int limit = 20,
     String? status,
+    bool? flagged,
     String sort = '-createdAt',
   }) async {
     final queryParams = <String, dynamic>{
@@ -610,8 +611,24 @@ class ApiService {
       'sort': sort,
     };
     if (status != null) queryParams['status'] = status;
+    if (flagged != null) queryParams['flagged'] = flagged.toString();
 
     final response = await dio.get('/admin/reviews', queryParameters: queryParams);
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> getAdminFlaggedReviews({
+    int page = 1,
+    int limit = 20,
+    String sort = '-createdAt',
+  }) async {
+    final queryParams = <String, dynamic>{
+      'page': page,
+      'limit': limit,
+      'sort': sort,
+    };
+
+    final response = await dio.get('/admin/reviews/flagged', queryParameters: queryParams);
     return response.data;
   }
 
@@ -620,8 +637,27 @@ class ApiService {
     return response.data;
   }
 
+  Future<Map<String, dynamic>> approveAdminReviewModeration(String id, {String? note}) async {
+    final response = await dio.put('/admin/reviews/$id/moderation/approve', data: {
+      if (note != null) 'note': note,
+    });
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> rejectAdminReviewModeration(String id, {String? note}) async {
+    final response = await dio.put('/admin/reviews/$id/moderation/reject', data: {
+      if (note != null) 'note': note,
+    });
+    return response.data;
+  }
+
   Future<Map<String, dynamic>> deleteAdminReview(String id) async {
     final response = await dio.delete('/admin/reviews/$id');
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> getModerationCategories() async {
+    final response = await dio.get('/admin/reviews/moderation-categories');
     return response.data;
   }
 

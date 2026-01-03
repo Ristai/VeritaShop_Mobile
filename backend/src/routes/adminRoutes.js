@@ -23,6 +23,10 @@ const {
   getAllReviews,
   approveReview,
   deleteReview,
+  getFlaggedReviews,
+  approveReviewModeration,
+  rejectReviewModeration,
+  getModerationCategories,
   getRevenueReport,
   getProductReport,
   getOrderReport,
@@ -73,7 +77,11 @@ router.delete('/coupons/:id', deleteCoupon);
 
 // Reviews
 router.get('/reviews', getAllReviews);
+router.get('/reviews/flagged', getFlaggedReviews);
+router.get('/reviews/moderation-categories', getModerationCategories);
 router.put('/reviews/:id/approve', approveReview);
+router.put('/reviews/:id/moderation/approve', approveReviewModeration);
+router.put('/reviews/:id/moderation/reject', rejectReviewModeration);
 router.delete('/reviews/:id', deleteReview);
 
 // Reports

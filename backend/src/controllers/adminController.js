@@ -8,6 +8,7 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { successResponse, errorResponse } = require('../utils/response');
 const { sendOrderStatusUpdateEmail, sendPasswordResetEmail } = require('../utils/emailService');
+const { getFlaggedCategoriesVietnamese, MODERATION_CATEGORIES } = require('../utils/moderationService');
 
 // Dashboard Stats
 const getDashboardStats = async (req, res) => {
@@ -448,10 +449,14 @@ const deleteCoupon = async (req, res) => {
 // Reviews Management
 const getAllReviews = async (req, res) => {
   try {
-    const { page = 1, limit = 20, status, sort = '-createdAt' } = req.query;
-    
+    const { page = 1, limit = 20, status, flagged, sort = '-createdAt' } = req.query;
+
     const query = {};
+    // Legacy status filter (approved/pending based on isApproved field)
     if (status) query.isApproved = status === 'approved';
+    // New moderation filter
+    if (flagged === 'true') query.isFlagged = true;
+    if (flagged === 'false') query.isFlagged = false;
 
     const reviews = await Review.find(query)
       .populate('user', 'name email avatar')
@@ -461,9 +466,23 @@ const getAllReviews = async (req, res) => {
       .limit(parseInt(limit))
       .lean();
 
-    const total = await Review.countDocuments(query);
+    // Add Vietnamese category names for flagged reviews
+    const reviewsWithVietnamese = reviews.map(review => ({
+      ...review,
+      flaggedCategoriesVietnamese: review.moderationResult?.categories
+        ? getFlaggedCategoriesVietnamese(review.moderationResult.categories)
+        : [],
+    }));
 
-    successResponse(res, { reviews, pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / limit) } });
+    const total = await Review.countDocuments(query);
+    // Count flagged reviews for badge
+    const flaggedCount = await Review.countDocuments({ isFlagged: true, moderationStatus: 'pending' });
+
+    successResponse(res, {
+      reviews: reviewsWithVietnamese,
+      flaggedCount,
+      pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / limit) }
+    });
   } catch (error) {
     errorResponse(res, error.message, 500);
   }
@@ -487,7 +506,7 @@ const deleteReview = async (req, res) => {
   try {
     const review = await Review.findByIdAndDelete(req.params.id);
     if (!review) return errorResponse(res, 'Không tìm thấy đánh giá', 404);
-    
+
     // Update product rating
     const productReviews = await Review.find({ product: review.product });
     const avgRating = productReviews.length > 0
@@ -496,6 +515,99 @@ const deleteReview = async (req, res) => {
     await Product.findByIdAndUpdate(review.product, { rating: avgRating, reviewCount: productReviews.length });
 
     successResponse(res, null, 'Đã xóa đánh giá');
+  } catch (error) {
+    errorResponse(res, error.message, 500);
+  }
+};
+
+// Get flagged reviews (moderation pending)
+const getFlaggedReviews = async (req, res) => {
+  try {
+    const { page = 1, limit = 20, sort = '-createdAt' } = req.query;
+
+    const query = { isFlagged: true, moderationStatus: 'pending' };
+
+    const reviews = await Review.find(query)
+      .populate('user', 'name email avatar')
+      .populate('product', 'name images')
+      .sort(sort)
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit))
+      .lean();
+
+    // Add Vietnamese category names
+    const reviewsWithVietnamese = reviews.map(review => ({
+      ...review,
+      flaggedCategoriesVietnamese: review.moderationResult?.categories
+        ? getFlaggedCategoriesVietnamese(review.moderationResult.categories)
+        : [],
+    }));
+
+    const total = await Review.countDocuments(query);
+
+    successResponse(res, {
+      reviews: reviewsWithVietnamese,
+      pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / limit) }
+    });
+  } catch (error) {
+    errorResponse(res, error.message, 500);
+  }
+};
+
+// Approve moderation (clear flag, set status to approved)
+const approveReviewModeration = async (req, res) => {
+  try {
+    const { note } = req.body;
+
+    const review = await Review.findByIdAndUpdate(
+      req.params.id,
+      {
+        isFlagged: false,
+        moderationStatus: 'approved',
+        moderationNote: note || 'Đã được admin duyệt',
+      },
+      { new: true }
+    ).populate('user', 'name email avatar')
+      .populate('product', 'name images');
+
+    if (!review) return errorResponse(res, 'Không tìm thấy đánh giá', 404);
+
+    successResponse(res, { review }, 'Đã duyệt đánh giá');
+  } catch (error) {
+    errorResponse(res, error.message, 500);
+  }
+};
+
+// Reject moderation (soft delete review)
+const rejectReviewModeration = async (req, res) => {
+  try {
+    const { note } = req.body;
+
+    const review = await Review.findByIdAndUpdate(
+      req.params.id,
+      {
+        isActive: false,
+        moderationStatus: 'rejected',
+        moderationNote: note || 'Bị từ chối do vi phạm nội dung',
+      },
+      { new: true }
+    );
+
+    if (!review) return errorResponse(res, 'Không tìm thấy đánh giá', 404);
+
+    // Update product rating (exclude rejected review)
+    await Review.calcAverageRating(review.product);
+
+    successResponse(res, { review }, 'Đã từ chối đánh giá');
+  } catch (error) {
+    errorResponse(res, error.message, 500);
+  }
+};
+
+// Get moderation categories list with Vietnamese names
+const getModerationCategories = async (req, res) => {
+  try {
+    successResponse(res, { categories: MODERATION_CATEGORIES });
   } catch (error) {
     errorResponse(res, error.message, 500);
   }
@@ -736,6 +848,10 @@ module.exports = {
   getAllReviews,
   approveReview,
   deleteReview,
+  getFlaggedReviews,
+  approveReviewModeration,
+  rejectReviewModeration,
+  getModerationCategories,
   getRevenueReport,
   getProductReport,
   getOrderReport,

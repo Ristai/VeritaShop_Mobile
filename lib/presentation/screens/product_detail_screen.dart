@@ -32,6 +32,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   bool _isLoadingReviews = true;
   int _totalReviews = 0;
 
+  // Track unblurred flagged reviews
+  final Set<String> _unblurredReviewIds = {};
+
   List<String> get _productImages => [
         widget.product.imageUrl,
         'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400',
@@ -653,138 +656,400 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Widget _buildReviewItemFromModel(ReviewModel review, AppColors colors) {
+    final bool isBlurred = review.isFlagged && !_unblurredReviewIds.contains(review.id);
+    final categories = review.flaggedCategoriesVietnamese;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: kAccentColor,
-                backgroundImage: review.avatarUrl.isNotEmpty
-                    ? NetworkImage(review.avatarUrl)
-                    : null,
-                child: review.avatarUrl.isEmpty
-                    ? Text(
-                        review.userName.isNotEmpty ? review.userName[0].toUpperCase() : 'U',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      )
-                    : null,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
+          // Flagged content warning banner
+          if (review.isFlagged) ...[
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  if (_unblurredReviewIds.contains(review.id)) {
+                    _unblurredReviewIds.remove(review.id);
+                  } else {
+                    _unblurredReviewIds.add(review.id);
+                  }
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        Text(
-                          review.userName,
-                          style: const TextStyle(fontWeight: FontWeight.w500),
+                        Icon(
+                          isBlurred ? Icons.visibility_off : Icons.visibility,
+                          size: 18,
+                          color: Colors.red.shade700,
                         ),
-                        const Spacer(),
-                        // Overall sentiment badge
-                        if (review.sentimentAnalysis.isNotEmpty)
-                          OverallSentimentBadge(
-                            overallSentiment: review.overallSentiment,
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Nội dung có thể không phù hợp',
+                                style: TextStyle(
+                                  color: Colors.red.shade700,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                isBlurred
+                                    ? 'Nhấn để xem nội dung'
+                                    : 'Nhấn để ẩn nội dung',
+                                style: TextStyle(
+                                  color: Colors.red.shade600,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
                           ),
+                        ),
+                        Icon(
+                          isBlurred ? Icons.expand_more : Icons.expand_less,
+                          color: Colors.red.shade700,
+                        ),
                       ],
                     ),
-                    Row(
-                      children: [
-                        ...List.generate(
-                          5,
-                          (index) => Icon(
-                            index < review.rating ? Icons.star : Icons.star_border,
-                            color: kYellowColor,
-                            size: 14,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          review.timeAgo,
-                          style: TextStyle(
-                            color: colors.secondaryText,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
+                    // Show flagged categories
+                    if (categories.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: categories.map((category) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade100,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              category,
+                              style: TextStyle(
+                                color: Colors.red.shade800,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
                   ],
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            review.reviewText,
-            style: TextStyle(
-              color: colors.secondaryText,
-              height: 1.4,
             ),
-          ),
-          // Review images
-          if (review.images.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            SizedBox(
-              height: 100,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: review.images.length,
-                itemBuilder: (context, index) {
-                  return GestureDetector(
-                    onTap: () => ImageZoomViewer.show(
-                      context,
-                      review.images,
-                      initialIndex: index,
-                    ),
-                    child: Container(
-                      width: 100,
-                      height: 100,
-                      margin: const EdgeInsets.only(right: 8),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: colors.border),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: CachedNetworkImage(
-                          imageUrl: review.images[index],
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(
-                            color: colors.card,
-                            child: const Center(
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          ),
-                          errorWidget: (context, url, error) => Container(
-                            color: colors.card,
-                            child: Icon(Icons.image, color: colors.secondaryText),
-                          ),
-                        ),
+          ]
+          // Pending moderation notice (for non-flagged pending reviews)
+          else if (review.isPendingModeration) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              margin: const EdgeInsets.only(bottom: 8),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: Colors.orange.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.schedule, size: 14, color: Colors.orange.shade700),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Đánh giá đang chờ duyệt',
+                      style: TextStyle(
+                        color: Colors.orange.shade700,
+                        fontSize: 12,
                       ),
                     ),
-                  );
-                },
+                  ),
+                ],
               ),
             ),
           ],
-          // Sentiment badges for aspects
-          if (review.sentimentAnalysis.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            SentimentBadgeList(
-              sentimentAnalysis: review.sentimentAnalysis,
-              compact: true,
-              maxItems: 4,
-            ),
-          ],
+          // Review content - with blur effect if flagged
+          Stack(
+            children: [
+              // Actual content
+              AnimatedOpacity(
+                opacity: isBlurred ? 0.0 : 1.0,
+                duration: const Duration(milliseconds: 200),
+                child: IgnorePointer(
+                  ignoring: isBlurred,
+                  child: _buildReviewContent(review, colors),
+                ),
+              ),
+              // Blur overlay
+              if (isBlurred)
+                Positioned.fill(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: colors.card,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Stack(
+                        children: [
+                          // Blurred placeholder content
+                          Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      width: 32,
+                                      height: 32,
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade300,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Container(
+                                          width: 100,
+                                          height: 12,
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey.shade300,
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Container(
+                                          width: 60,
+                                          height: 10,
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey.shade200,
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Container(
+                                  width: double.infinity,
+                                  height: 14,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade300,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Container(
+                                  width: MediaQuery.of(context).size.width * 0.6,
+                                  height: 14,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade300,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Container(
+                                  width: MediaQuery.of(context).size.width * 0.4,
+                                  height: 14,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade200,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          // Blur filter
+                          Positioned.fill(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: colors.card.withOpacity(0.7),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.visibility_off,
+                                      size: 32,
+                                      color: Colors.grey.shade500,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Nội dung đã được ẩn',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade600,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildReviewContent(ReviewModel review, AppColors colors) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: kAccentColor,
+              backgroundImage: review.avatarUrl.isNotEmpty
+                  ? NetworkImage(review.avatarUrl)
+                  : null,
+              child: review.avatarUrl.isEmpty
+                  ? Text(
+                      review.userName.isNotEmpty ? review.userName[0].toUpperCase() : 'U',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        review.userName,
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      const Spacer(),
+                      // Overall sentiment badge
+                      if (review.sentimentAnalysis.isNotEmpty)
+                        OverallSentimentBadge(
+                          overallSentiment: review.overallSentiment,
+                        ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      ...List.generate(
+                        5,
+                        (index) => Icon(
+                          index < review.rating ? Icons.star : Icons.star_border,
+                          color: kYellowColor,
+                          size: 14,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        review.timeAgo,
+                        style: TextStyle(
+                          color: colors.secondaryText,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          review.reviewText,
+          style: TextStyle(
+            color: colors.secondaryText,
+            height: 1.4,
+          ),
+        ),
+        // Review images
+        if (review.images.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 100,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: review.images.length,
+              itemBuilder: (context, index) {
+                return GestureDetector(
+                  onTap: () => ImageZoomViewer.show(
+                    context,
+                    review.images,
+                    initialIndex: index,
+                  ),
+                  child: Container(
+                    width: 100,
+                    height: 100,
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: colors.border),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: CachedNetworkImage(
+                        imageUrl: review.images[index],
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          color: colors.card,
+                          child: const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          color: colors.card,
+                          child: Icon(Icons.image, color: colors.secondaryText),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+        // Sentiment badges for aspects
+        if (review.sentimentAnalysis.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          SentimentBadgeList(
+            sentimentAnalysis: review.sentimentAnalysis,
+            compact: true,
+            maxItems: 4,
+          ),
+        ],
+      ],
     );
   }
 
