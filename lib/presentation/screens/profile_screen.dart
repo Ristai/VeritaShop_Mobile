@@ -288,14 +288,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _buildOptionItem(
             icon: Icons.location_on_outlined,
             title: 'Địa chỉ giao hàng',
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Vui lòng thêm địa chỉ khi thanh toán'),
-                  backgroundColor: kYellowColor,
-                ),
-              );
-            },
+            onTap: () => Navigator.pushNamed(context, '/addresses'),
           ),
           Divider(color: colors.border, height: 1),
           _buildOptionItem(

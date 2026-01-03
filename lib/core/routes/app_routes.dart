@@ -10,6 +10,7 @@ import '../../presentation/screens/order_history_screen.dart';
 import '../../presentation/screens/wishlist_screen.dart';
 import '../../presentation/screens/splash_screen.dart';
 import '../../presentation/screens/onboarding_screen.dart';
+import '../../presentation/screens/address_list_screen.dart';
 import '../../presentation/screens/admin/admin_login_screen.dart';
 import '../../presentation/screens/admin/admin_shell.dart';
 
@@ -25,6 +26,7 @@ class AppRoutes {
   static const String checkout = '/checkout';
   static const String orders = '/orders';
   static const String wishlist = '/wishlist';
+  static const String addresses = '/addresses';
   static const String adminLogin = '/admin-login';
   static const String admin = '/admin';
 
@@ -41,6 +43,7 @@ class AppRoutes {
       checkout: (context) => const CheckoutScreen(),
       orders: (context) => const OrderHistoryScreen(),
       wishlist: (context) => const WishlistScreen(),
+      addresses: (context) => const AddressListScreen(),
       adminLogin: (context) => const AdminLoginScreen(),
       admin: (context) => const AdminShell(),
     };
