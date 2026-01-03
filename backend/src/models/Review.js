@@ -43,12 +43,40 @@ const reviewSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  // ABSA Sentiment Analysis fields
+  sentimentAnalysis: [{
+    aspect: {
+      type: String,
+      enum: ['Battery', 'Camera', 'Performance', 'Display', 'Design',
+             'Packaging', 'Price', 'Shop_Service', 'Shipping', 'General'],
+    },
+    sentiment: {
+      type: String,
+      enum: ['positive', 'negative', 'neutral'],
+    },
+    confidence: {
+      type: Number,
+      default: 0,
+    },
+    scores: {
+      positive: { type: Number, default: 0 },
+      negative: { type: Number, default: 0 },
+      neutral: { type: Number, default: 0 },
+    },
+  }],
+  overallSentiment: {
+    type: String,
+    enum: ['positive', 'negative', 'neutral', 'mixed'],
+    default: 'neutral',
+  },
 }, {
   timestamps: true,
 });
 
 // Compound index: one review per user per product
-reviewSchema.index({ user: 1, product: 1 }, { unique: true });
+// TEMPORARILY DISABLED FOR TESTING - Allow multiple reviews
+// reviewSchema.index({ user: 1, product: 1 }, { unique: true });
+reviewSchema.index({ user: 1, product: 1 }); // Non-unique index for queries
 reviewSchema.index({ product: 1, createdAt: -1 });
 reviewSchema.index({ rating: 1 });
 

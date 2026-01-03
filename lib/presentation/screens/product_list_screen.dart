@@ -8,7 +8,6 @@ import '../view_models/search_history_view_model.dart';
 import '../widgets/product_card.dart';
 import '../widgets/skeleton_loading.dart';
 import '../widgets/search_history_overlay.dart';
-import 'home_screen.dart';
 import 'cart_screen.dart';
 import 'product_detail_screen.dart';
 import 'profile_screen.dart';
@@ -35,7 +34,10 @@ class SettingsPageWrapper extends StatelessWidget {
 
 /// Màn hình danh sách sản phẩm - Shopping Hub
 class ProductListScreen extends StatefulWidget {
-  const ProductListScreen({super.key});
+  /// Nếu true, không hiển thị Scaffold (dùng để embed trong HomeScreen)
+  final bool embedded;
+
+  const ProductListScreen({super.key, this.embedded = false});
 
   @override
   State<ProductListScreen> createState() => _ProductListScreenState();
@@ -300,29 +302,38 @@ class _ProductListScreenState extends State<ProductListScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+
+    final body = Column(
+      children: [
+        _buildSearchBar(),
+        _buildCategoryChips(),
+        _buildFilterBar(),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: _handleRefresh,
+            color: kAccentColor,
+            child: _isLoading
+                ? ProductListSkeleton(isGrid: _isGridView)
+                : _filteredProducts.isEmpty
+                    ? _buildEmptyState()
+                    : _isGridView
+                        ? _buildProductGrid()
+                        : _buildProductList(),
+          ),
+        ),
+      ],
+    );
+
+    // Nếu embedded, chỉ trả về body (không có Scaffold)
+    if (widget.embedded) {
+      return body;
+    }
+
+    // Nếu không embedded, trả về Scaffold đầy đủ
     return Scaffold(
       backgroundColor: colors.background,
       appBar: _buildAppBar(),
-      body: Column(
-        children: [
-          _buildSearchBar(),
-          _buildCategoryChips(),
-          _buildFilterBar(),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: _handleRefresh,
-              color: kAccentColor,
-              child: _isLoading
-                  ? ProductListSkeleton(isGrid: _isGridView)
-                  : _filteredProducts.isEmpty
-                      ? _buildEmptyState()
-                      : _isGridView
-                          ? _buildProductGrid()
-                          : _buildProductList(),
-            ),
-          ),
-        ],
-      ),
+      body: body,
     );
   }
 
@@ -339,17 +350,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
         style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
       ),
       actions: [
-        // AI Dashboard Button
-        IconButton(
-          icon: const Icon(Icons.dashboard_outlined, size: 26),
-          onPressed: () {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const HomeScreen()),
-            );
-          },
-          tooltip: 'AI Dashboard',
-          color: colors.primaryText,
-        ),
         // Cart Button with Badge
         Consumer<CartViewModel>(
           builder: (context, cartVM, _) {

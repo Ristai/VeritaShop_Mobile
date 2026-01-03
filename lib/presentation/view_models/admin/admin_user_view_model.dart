@@ -56,4 +56,51 @@ class AdminUserViewModel extends ChangeNotifier {
       return false;
     }
   }
+
+  Future<bool> createUser(Map<String, dynamic> data) async {
+    try {
+      await _repository.createUser(data);
+      await loadUsers(page: 1);
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateUser(String userId, Map<String, dynamic> data) async {
+    try {
+      await _repository.updateUser(userId, data);
+      await loadUsers(page: currentPage);
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> deleteUser(String userId) async {
+    try {
+      await _repository.deleteUser(userId);
+      await loadUsers(page: currentPage);
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<String?> resetUserPassword(String userId) async {
+    try {
+      final email = await _repository.resetUserPassword(userId);
+      return email;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return null;
+    }
+  }
 }

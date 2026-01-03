@@ -6,7 +6,9 @@ import '../widgets/custom_button.dart';
 import '../../core/constants/app_colors.dart';
 
 class CartScreen extends StatefulWidget {
-  const CartScreen({super.key});
+  final bool embedded;
+
+  const CartScreen({super.key, this.embedded = false});
 
   @override
   State<CartScreen> createState() => _CartScreenState();
@@ -238,6 +240,35 @@ class _CartScreenState extends State<CartScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final body = _isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : _cartItems.isEmpty
+            ? _buildEmptyCart()
+            : _buildCartContent();
+
+    // Nếu embedded, chỉ trả về body với bottom summary
+    if (widget.embedded) {
+      return Column(
+        children: [
+          // Clear cart button khi embedded
+          if (_cartItems.isNotEmpty)
+            Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 8, top: 4),
+                child: IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: _isUpdating ? null : _clearCart,
+                  tooltip: 'Xóa giỏ hàng',
+                ),
+              ),
+            ),
+          Expanded(child: body),
+          if (_cartItems.isNotEmpty) _buildBottomSummary(),
+        ],
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Cart'),
@@ -249,11 +280,7 @@ class _CartScreenState extends State<CartScreen> {
             ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _cartItems.isEmpty
-              ? _buildEmptyCart()
-              : _buildCartContent(),
+      body: body,
       bottomNavigationBar: _cartItems.isNotEmpty
           ? _buildBottomSummary()
           : null,

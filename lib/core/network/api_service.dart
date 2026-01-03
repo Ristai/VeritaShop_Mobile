@@ -518,6 +518,64 @@ class ApiService {
     return response.data;
   }
 
+  Future<Map<String, dynamic>> createAdminUser(Map<String, dynamic> data) async {
+    final response = await dio.post('/admin/users', data: data);
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> updateAdminUser(String id, Map<String, dynamic> data) async {
+    final response = await dio.put('/admin/users/$id', data: data);
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> deleteAdminUser(String id) async {
+    final response = await dio.delete('/admin/users/$id');
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> resetAdminUserPassword(String id) async {
+    final response = await dio.post('/admin/users/$id/reset-password');
+    return response.data;
+  }
+
+  // Admin Carts
+  Future<Map<String, dynamic>> getAdminCarts({
+    int page = 1,
+    int limit = 20,
+    String? search,
+  }) async {
+    final queryParams = <String, dynamic>{
+      'page': page,
+      'limit': limit,
+    };
+    if (search != null) queryParams['search'] = search;
+
+    final response = await dio.get('/admin/carts', queryParameters: queryParams);
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> getAdminCartByUser(String userId) async {
+    final response = await dio.get('/admin/carts/$userId');
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> updateAdminCartItem(String userId, String itemId, int quantity) async {
+    final response = await dio.put('/admin/carts/$userId/items/$itemId', data: {
+      'quantity': quantity,
+    });
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> deleteAdminCartItem(String userId, String itemId) async {
+    final response = await dio.delete('/admin/carts/$userId/items/$itemId');
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> clearAdminUserCart(String userId) async {
+    final response = await dio.delete('/admin/carts/$userId');
+    return response.data;
+  }
+
   // Admin Coupons
   Future<Map<String, dynamic>> getAdminCoupons() async {
     final response = await dio.get('/admin/coupons');

@@ -2,6 +2,7 @@ const Review = require('../models/Review');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
 const { successResponse, errorResponse, paginatedResponse } = require('../utils/response');
+const { analyzeSentiment } = require('../utils/absaService');
 
 // @desc    Get reviews for a product
 // @route   GET /api/reviews/product/:productId
@@ -102,14 +103,15 @@ const createReview = async (req, res, next) => {
     }
 
     // Check if user already reviewed this product
-    const existingReview = await Review.findOne({
-      user: req.user._id,
-      product: productId,
-    });
+    // TEMPORARILY DISABLED FOR TESTING - Allow multiple reviews
+    // const existingReview = await Review.findOne({
+    //   user: req.user._id,
+    //   product: productId,
+    // });
 
-    if (existingReview) {
-      return errorResponse(res, 'Bạn đã đánh giá sản phẩm này rồi', 400, 'ALREADY_REVIEWED');
-    }
+    // if (existingReview) {
+    //   return errorResponse(res, 'Bạn đã đánh giá sản phẩm này rồi', 400, 'ALREADY_REVIEWED');
+    // }
 
     // Check if user has purchased this product (verified purchase)
     const hasPurchased = await Order.findOne({
@@ -118,7 +120,19 @@ const createReview = async (req, res, next) => {
       status: 'delivered',
     });
 
-    // Create review
+    // Analyze sentiment using ABSA API (non-blocking)
+    let sentimentData = { sentimentAnalysis: [], overallSentiment: 'neutral' };
+    try {
+      const analysisResult = await analyzeSentiment(text);
+      if (analysisResult) {
+        sentimentData = analysisResult;
+      }
+    } catch (sentimentError) {
+      console.error('Sentiment analysis failed:', sentimentError.message);
+      // Continue without sentiment - graceful degradation
+    }
+
+    // Create review with sentiment data
     const review = await Review.create({
       user: req.user._id,
       product: productId,
@@ -127,6 +141,8 @@ const createReview = async (req, res, next) => {
       text,
       images: images || [],
       isVerifiedPurchase: !!hasPurchased,
+      sentimentAnalysis: sentimentData.sentimentAnalysis,
+      overallSentiment: sentimentData.overallSentiment,
     });
 
     // Populate user info

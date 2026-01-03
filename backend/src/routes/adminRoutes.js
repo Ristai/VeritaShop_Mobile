@@ -12,6 +12,10 @@ const {
   refundOrder,
   getAllUsers,
   updateUserStatus,
+  createUser,
+  updateUser,
+  deleteUser,
+  resetUserPassword,
   getAllCoupons,
   createCoupon,
   updateCoupon,
@@ -21,7 +25,12 @@ const {
   deleteReview,
   getRevenueReport,
   getProductReport,
-  getOrderReport
+  getOrderReport,
+  getAllCarts,
+  getCartByUser,
+  updateCartItem,
+  deleteCartItem,
+  clearUserCart
 } = require('../controllers/adminController');
 
 // All routes require admin authentication
@@ -43,7 +52,18 @@ router.post('/orders/:id/refund', refundOrder);
 
 // Users
 router.get('/users', getAllUsers);
+router.post('/users', createUser);
+router.put('/users/:id', updateUser);
 router.put('/users/:id/status', updateUserStatus);
+router.delete('/users/:id', deleteUser);
+router.post('/users/:id/reset-password', resetUserPassword);
+
+// Carts
+router.get('/carts', getAllCarts);
+router.get('/carts/:userId', getCartByUser);
+router.put('/carts/:userId/items/:itemId', updateCartItem);
+router.delete('/carts/:userId/items/:itemId', deleteCartItem);
+router.delete('/carts/:userId', clearUserCart);
 
 // Coupons
 router.get('/coupons', getAllCoupons);

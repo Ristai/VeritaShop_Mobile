@@ -13,11 +13,8 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _realtimeNotify = true;
-  bool _autoAnalysis = true;
-  bool _filterSensitive = false;
   bool _soundEnabled = true;
   String _language = 'Tiếng Việt';
-  double _aiSensitivity = 0.7;
 
   @override
   Widget build(BuildContext context) {
@@ -55,31 +52,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Phát âm thanh khi có thông báo',
                 _soundEnabled,
                 (value) => setState(() => _soundEnabled = value),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _buildSection(
-            'AI & Phân tích',
-            Icons.psychology_outlined,
-            [
-              _buildSwitchTile(
-                'Phân tích tự động',
-                'Tự động phân tích sentiment cho bình luận mới',
-                _autoAnalysis,
-                (value) => setState(() => _autoAnalysis = value),
-              ),
-              _buildSwitchTile(
-                'Lọc nội dung nhạy cảm',
-                'Tự động ẩn các bình luận có nội dung không phù hợp',
-                _filterSensitive,
-                (value) => setState(() => _filterSensitive = value),
-              ),
-              _buildSliderTile(
-                'Độ nhạy AI',
-                'Điều chỉnh ngưỡng phát hiện sentiment',
-                _aiSensitivity,
-                (value) => setState(() => _aiSensitivity = value),
               ),
             ],
           ),
@@ -269,55 +241,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       subtitle: subtitle,
       value: value,
       onChanged: onChanged,
-    );
-  }
-
-  Widget _buildSliderTile(
-    String title,
-    String subtitle,
-    double value,
-    ValueChanged<double> onChanged,
-  ) {
-    final colors = AppColors.of(context);
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(title),
-              Text(
-                '${(value * 100).toInt()}%',
-                style: const TextStyle(
-                  color: kAccentColor,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          Text(
-            subtitle,
-            style: TextStyle(color: colors.secondaryText, fontSize: 12),
-          ),
-          const SizedBox(height: 8),
-          SliderTheme(
-            data: SliderThemeData(
-              activeTrackColor: kAccentColor,
-              inactiveTrackColor: colors.border,
-              thumbColor: kAccentColor,
-              overlayColor: kAccentColor.withValues(alpha: 0.2),
-            ),
-            child: Slider(
-              value: value,
-              onChanged: onChanged,
-              min: 0.1,
-              max: 1.0,
-            ),
-          ),
-        ],
-      ),
     );
   }
 

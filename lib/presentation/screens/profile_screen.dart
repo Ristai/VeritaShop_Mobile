@@ -8,7 +8,9 @@ import '../view_models/wishlist_view_model.dart';
 import '../view_models/order_view_model.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final bool embedded;
+
+  const ProfileScreen({super.key, this.embedded = false});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -70,6 +72,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+
+    final body = Consumer<AuthViewModel>(
+      builder: (context, authViewModel, _) {
+        if (authViewModel.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final user = authViewModel.currentUser;
+
+        return SingleChildScrollView(
+          child: Column(
+            children: [
+              _buildProfileHeader(user),
+              _buildStatistics(),
+              _buildProfileOptions(),
+              _buildLogoutSection(),
+            ],
+          ),
+        );
+      },
+    );
+
+    // Nếu embedded, chỉ trả về body
+    if (widget.embedded) {
+      return body;
+    }
+
     return Scaffold(
       backgroundColor: colors.background,
       appBar: AppBar(
@@ -78,26 +107,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         centerTitle: true,
         elevation: 0,
       ),
-      body: Consumer<AuthViewModel>(
-        builder: (context, authViewModel, _) {
-          if (authViewModel.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          
-          final user = authViewModel.currentUser;
-          
-          return SingleChildScrollView(
-            child: Column(
-              children: [
-                _buildProfileHeader(user),
-                _buildStatistics(),
-                _buildProfileOptions(),
-                _buildLogoutSection(),
-              ],
-            ),
-          );
-        },
-      ),
+      body: body,
     );
   }
 
@@ -246,6 +256,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildProfileOptions() {
     final colors = AppColors.of(context);
+    final authVm = context.watch<AuthViewModel>();
+    final isAdmin = authVm.currentUser?.role == 'admin';
+
     return Container(
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -255,6 +268,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       child: Column(
         children: [
+          // Admin Panel button - only show for admin users
+          if (isAdmin) ...[
+            _buildAdminPanelItem(),
+            Divider(color: colors.border, height: 1),
+          ],
           _buildOptionItem(
             icon: Icons.shopping_bag_outlined,
             title: 'Đơn hàng của tôi',
@@ -300,6 +318,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildAdminPanelItem() {
+    return ListTile(
+      leading: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [kAccentColor.withValues(alpha: 0.2), kPurpleColor.withValues(alpha: 0.1)],
+          ),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: const Icon(Icons.admin_panel_settings, color: kAccentColor, size: 20),
+      ),
+      title: const Text(
+        'Quản trị Admin',
+        style: TextStyle(
+          color: kAccentColor,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: kAccentColor),
+      onTap: () => Navigator.of(context).pushReplacementNamed('/admin'),
     );
   }
 

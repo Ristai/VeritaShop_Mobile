@@ -6,6 +6,7 @@ import 'admin_dashboard_screen.dart';
 import 'admin_products_screen.dart';
 import 'admin_orders_screen.dart';
 import 'admin_users_screen.dart';
+import 'admin_carts_screen.dart';
 import 'admin_coupons_screen.dart';
 import 'admin_reviews_screen.dart';
 import 'admin_reports_screen.dart';
@@ -26,6 +27,7 @@ class _AdminShellState extends State<AdminShell> {
     _NavItem(icon: Icons.inventory_2_outlined, selectedIcon: Icons.inventory_2, label: 'Sản phẩm'),
     _NavItem(icon: Icons.shopping_bag_outlined, selectedIcon: Icons.shopping_bag, label: 'Đơn hàng'),
     _NavItem(icon: Icons.people_outline, selectedIcon: Icons.people, label: 'Khách hàng'),
+    _NavItem(icon: Icons.shopping_cart_outlined, selectedIcon: Icons.shopping_cart, label: 'Giỏ hàng'),
     _NavItem(icon: Icons.discount_outlined, selectedIcon: Icons.discount, label: 'Mã giảm giá'),
     _NavItem(icon: Icons.rate_review_outlined, selectedIcon: Icons.rate_review, label: 'Đánh giá'),
     _NavItem(icon: Icons.analytics_outlined, selectedIcon: Icons.analytics, label: 'Báo cáo'),
@@ -36,6 +38,7 @@ class _AdminShellState extends State<AdminShell> {
     const AdminProductsScreen(),
     const AdminOrdersScreen(),
     const AdminUsersScreen(),
+    const AdminCartsScreen(),
     const AdminCouponsScreen(),
     const AdminReviewsScreen(),
     const AdminReportsScreen(),
@@ -220,6 +223,30 @@ class _AdminShellState extends State<AdminShell> {
             ),
           ),
           const Divider(),
+          // Switch to Shop button
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 12),
+            child: ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [kAccentColor.withValues(alpha: 0.2), kPurpleColor.withValues(alpha: 0.1)],
+                  ),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Icon(Icons.storefront, color: kAccentColor, size: 20),
+              ),
+              title: const Text('Chế độ mua sắm', style: TextStyle(color: kAccentColor, fontWeight: FontWeight.w600)),
+              trailing: const Icon(Icons.arrow_forward_ios, color: kAccentColor, size: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).pushReplacementNamed('/home');
+              },
+            ),
+          ),
+          const SizedBox(height: 8),
           ListTile(
             leading: const Icon(Icons.logout, color: kRedColor),
             title: const Text('Đăng xuất', style: TextStyle(color: kRedColor)),
@@ -400,68 +427,121 @@ class _AdminShellState extends State<AdminShell> {
           // User Section - Wrap với SafeArea để tránh overflow
           SafeArea(
             top: false,
-            child: Container(
-              margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: colors.background,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundColor: kAccentColor,
-                    child: Text(
-                      authVm.currentUser?.name.substring(0, 1).toUpperCase() ?? 'A',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Switch to Shop button
+                Container(
+                  margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => Navigator.of(context).pushReplacementNamed('/home'),
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: _isExpanded ? 16 : 12,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              kAccentColor.withValues(alpha: 0.15),
+                              kPurpleColor.withValues(alpha: 0.1),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: kAccentColor.withValues(alpha: 0.3)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: _isExpanded ? MainAxisAlignment.start : MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.storefront, color: kAccentColor, size: 20),
+                            if (_isExpanded) ...[
+                              const SizedBox(width: 12),
+                              const Expanded(
+                                child: Text(
+                                  'Chế độ mua sắm',
+                                  style: TextStyle(
+                                    color: kAccentColor,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                              const Icon(Icons.arrow_forward_ios, color: kAccentColor, size: 14),
+                            ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                  if (_isExpanded) ...[
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            authVm.currentUser?.name ?? 'Admin',
-                            style: TextStyle(
-                              color: colors.primaryText,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 12,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                ),
+                // User info
+                Container(
+                  margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: colors.background,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 16,
+                        backgroundColor: kAccentColor,
+                        child: Text(
+                          authVm.currentUser?.name.substring(0, 1).toUpperCase() ?? 'A',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
                           ),
-                          Text(
-                            'Quản trị viên',
-                            style: TextStyle(
-                              color: colors.secondaryText,
-                              fontSize: 10,
-                            ),
+                        ),
+                      ),
+                      if (_isExpanded) ...[
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                authVm.currentUser?.name ?? 'Admin',
+                                style: TextStyle(
+                                  color: colors.primaryText,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                'Quản trị viên',
+                                style: TextStyle(
+                                  color: colors.secondaryText,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(
-                      width: 32,
-                      height: 32,
-                      child: IconButton(
-                        onPressed: () => _handleLogout(context),
-                        icon: const Icon(Icons.logout, size: 18),
-                        color: kRedColor,
-                        padding: EdgeInsets.zero,
-                        tooltip: 'Đăng xuất',
-                      ),
-                    ),
-                  ],
-                ],
-              ),
+                        ),
+                        SizedBox(
+                          width: 32,
+                          height: 32,
+                          child: IconButton(
+                            onPressed: () => _handleLogout(context),
+                            icon: const Icon(Icons.logout, size: 18),
+                            color: kRedColor,
+                            padding: EdgeInsets.zero,
+                            tooltip: 'Đăng xuất',
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -613,6 +693,26 @@ class _AdminShellState extends State<AdminShell> {
         ),
         const PopupMenuDivider(),
         PopupMenuItem(
+          value: 'shop',
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [kAccentColor.withValues(alpha: 0.2), kPurpleColor.withValues(alpha: 0.1)],
+                  ),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Icon(Icons.storefront, color: kAccentColor, size: 18),
+              ),
+              const SizedBox(width: 12),
+              const Text('Chế độ mua sắm', style: TextStyle(fontWeight: FontWeight.w500)),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem(
           value: 'profile',
           child: Row(
             children: [
@@ -647,6 +747,8 @@ class _AdminShellState extends State<AdminShell> {
       onSelected: (value) {
         if (value == 'logout') {
           _handleLogout(context);
+        } else if (value == 'shop') {
+          Navigator.of(context).pushReplacementNamed('/home');
         }
       },
     );

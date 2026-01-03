@@ -311,7 +311,71 @@ const sendOrderStatusUpdateEmail = async (order, user, newStatus) => {
   }
 };
 
+// Send password reset email (Admin initiated)
+const sendPasswordResetEmail = async (email, userName, tempPassword) => {
+  try {
+    const transporter = createTransporter();
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Mật khẩu mới - VeritaShop</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+  <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 30px;">
+    <h1 style="color: #667eea; text-align: center;">🛍️ VeritaShop</h1>
+
+    <p>Xin chào <strong>${userName}</strong>,</p>
+
+    <p>Mật khẩu tài khoản của bạn đã được đặt lại bởi quản trị viên.</p>
+
+    <div style="text-align: center; padding: 30px; background-color: #f8f9fa; border-radius: 12px; margin: 20px 0;">
+      <p style="margin: 0; color: #666; font-size: 14px;">Mật khẩu mới của bạn là:</p>
+      <p style="font-size: 28px; font-weight: bold; color: #667eea; margin: 15px 0; letter-spacing: 3px;">
+        ${tempPassword}
+      </p>
+    </div>
+
+    <p style="color: #dc3545; font-size: 14px;">
+      ⚠️ <strong>Lưu ý quan trọng:</strong> Vui lòng đăng nhập và đổi mật khẩu ngay sau khi nhận được email này.
+    </p>
+
+    <p style="text-align: center; margin-top: 30px;">
+      <a href="${process.env.APP_URL || 'https://veritashop.vn'}/login"
+         style="display: inline-block; background-color: #667eea; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">
+        Đăng nhập ngay
+      </a>
+    </p>
+
+    <p style="color: #666; font-size: 14px; text-align: center; margin-top: 30px;">
+      Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng liên hệ ngay với chúng tôi.
+    </p>
+  </div>
+</body>
+</html>
+    `;
+
+    const mailOptions = {
+      from: `"VeritaShop" <${process.env.SMTP_FROM || 'noreply@veritashop.vn'}>`,
+      to: email,
+      subject: `🔐 Mật khẩu mới cho tài khoản VeritaShop`,
+      html,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`Password reset email sent to ${email}: ${info.messageId}`);
+
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('Error sending password reset email:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 module.exports = {
   sendOrderConfirmationEmail,
   sendOrderStatusUpdateEmail,
+  sendPasswordResetEmail,
 };
