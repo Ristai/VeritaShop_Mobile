@@ -9,6 +9,7 @@ import 'presentation/view_models/auth_view_model.dart';
 import 'presentation/view_models/wishlist_view_model.dart';
 import 'presentation/view_models/order_view_model.dart';
 import 'presentation/view_models/search_history_view_model.dart';
+import 'presentation/view_models/search_view_model.dart';
 import 'presentation/view_models/theme_view_model.dart';
 import 'presentation/view_models/notification_view_model.dart';
 import 'presentation/view_models/admin/admin_dashboard_view_model.dart';
@@ -40,6 +41,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => WishlistViewModel()),
         ChangeNotifierProvider(create: (_) => OrderViewModel()),
         ChangeNotifierProvider(create: (_) => SearchHistoryViewModel()),
+        ChangeNotifierProvider(create: (_) => SearchViewModel()),
         ChangeNotifierProvider(create: (_) => NotificationViewModel()),
         // Admin Providers
         ChangeNotifierProvider(create: (_) => AdminDashboardViewModel()),

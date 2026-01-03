@@ -4,10 +4,12 @@ import '../../data/models/address_model.dart';
 import '../../data/models/cart_model.dart';
 import '../../data/repositories/order_repository.dart';
 import '../../core/network/api_service.dart';
+import '../../core/services/local_notification_service.dart';
 
 class OrderViewModel extends ChangeNotifier {
   final OrderRepository _orderRepository;
   final ApiService _apiService;
+  final LocalNotificationService _notificationService = LocalNotificationService();
 
   List<OrderModel> _orders = [];
   List<AddressModel> _addresses = [];
@@ -32,9 +34,6 @@ class OrderViewModel extends ChangeNotifier {
   final List<String> paymentMethods = [
     'COD',
     'MoMo',
-    'VNPay',
-    'ZaloPay',
-    'Card',
   ];
 
   Future<void> loadAddresses() async {
@@ -194,6 +193,18 @@ class OrderViewModel extends ChangeNotifier {
       if (order != null) {
         _orders.insert(0, order);
         notifyListeners();
+
+        // Gửi local notification khi đặt hàng thành công
+        await _notificationService.notifyNewOrder(order.id);
+
+        // Lên lịch nhắc nhở đánh giá sau 3 ngày
+        if (order.items.isNotEmpty) {
+          await _notificationService.scheduleReviewReminder(
+            productName: order.items.first.productName,
+            orderId: order.id,
+          );
+        }
+
         return order;
       }
       

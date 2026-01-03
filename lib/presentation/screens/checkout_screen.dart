@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/utils/currency_formatter.dart';
 import '../../data/models/address_model.dart';
 import '../../data/models/cart_model.dart';
 import '../../data/models/coupon_model.dart';
@@ -175,12 +176,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildStepIndicator() {
+    final colors = AppColors.of(context);
     final steps = ['Địa chỉ', 'Thanh toán', 'Xác nhận'];
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16),
       decoration: BoxDecoration(
-        color: kCardColor,
-        border: Border(bottom: BorderSide(color: kBorderColor.withValues(alpha: 0.5))),
+        color: colors.card,
+        border: Border(bottom: BorderSide(color: colors.border.withValues(alpha: 0.5))),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -195,10 +197,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     width: 30,
                     height: 30,
                     decoration: BoxDecoration(
-                      color: isActive ? kAccentColor : kCardColor,
+                      color: isActive ? kAccentColor : colors.card,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: isActive ? kAccentColor : kBorderColor,
+                        color: isActive ? kAccentColor : colors.border,
                       ),
                     ),
                     child: Center(
@@ -207,7 +209,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           : Text(
                               '${index + 1}',
                               style: TextStyle(
-                                color: isActive ? Colors.white : kSecondaryTextColor,
+                                color: isActive ? Colors.white : colors.secondaryText,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -218,7 +220,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     steps[index],
                     style: TextStyle(
                       fontSize: 12,
-                      color: isActive ? kAccentColor : kSecondaryTextColor,
+                      color: isActive ? kAccentColor : colors.secondaryText,
                     ),
                   ),
                 ],
@@ -228,7 +230,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   width: 40,
                   height: 2,
                   margin: const EdgeInsets.only(bottom: 16),
-                  color: index < _currentStep ? kAccentColor : kBorderColor,
+                  color: index < _currentStep ? kAccentColor : colors.border,
                 ),
             ],
           );
@@ -238,12 +240,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildAddressSection(OrderViewModel orderViewModel) {
+    final colors = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: kCardColor,
+        color: colors.card,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: kBorderColor),
+        border: Border.all(color: colors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -252,11 +255,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             children: [
               const Icon(Icons.location_on, color: kAccentColor, size: 20),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'Địa chỉ giao hàng',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
+                  color: colors.primaryText,
                 ),
               ),
               const Spacer(),
@@ -273,17 +277,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           if (orderViewModel.selectedAddress != null) ...[
             Text(
               orderViewModel.selectedAddress!.fullName,
-              style: const TextStyle(fontWeight: FontWeight.w500),
+              style: TextStyle(fontWeight: FontWeight.w500, color: colors.primaryText),
             ),
             const SizedBox(height: 4),
             Text(
               orderViewModel.selectedAddress!.phone,
-              style: const TextStyle(color: kSecondaryTextColor),
+              style: TextStyle(color: colors.secondaryText),
             ),
             const SizedBox(height: 4),
             Text(
               orderViewModel.selectedAddress!.fullAddress,
-              style: const TextStyle(color: kSecondaryTextColor),
+              style: TextStyle(color: colors.secondaryText),
             ),
           ] else
             GestureDetector(
@@ -291,9 +295,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: kBackgroundColor,
+                  color: colors.background,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: kBorderColor, style: BorderStyle.solid),
+                  border: Border.all(color: colors.border, style: BorderStyle.solid),
                 ),
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -314,25 +318,27 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildPaymentMethodSection(OrderViewModel orderViewModel) {
+    final colors = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: kCardColor,
+        color: colors.card,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: kBorderColor),
+        border: Border.all(color: colors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.payment, color: kAccentColor, size: 20),
-              SizedBox(width: 8),
+              const Icon(Icons.payment, color: kAccentColor, size: 20),
+              const SizedBox(width: 8),
               Text(
                 'Phương thức thanh toán',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
+                  color: colors.primaryText,
                 ),
               ),
             ],
@@ -346,24 +352,24 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isSelected ? kAccentColor.withValues(alpha: 0.1) : kBackgroundColor,
+                  color: isSelected ? kAccentColor.withValues(alpha: 0.1) : colors.background,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: isSelected ? kAccentColor : kBorderColor,
+                    color: isSelected ? kAccentColor : colors.border,
                   ),
                 ),
                 child: Row(
                   children: [
                     Icon(
                       _getPaymentIcon(method),
-                      color: isSelected ? kAccentColor : kSecondaryTextColor,
+                      color: isSelected ? kAccentColor : colors.secondaryText,
                       size: 24,
                     ),
                     const SizedBox(width: 12),
                     Text(
                       _getPaymentLabel(method),
                       style: TextStyle(
-                        color: isSelected ? kAccentColor : kPrimaryTextColor,
+                        color: isSelected ? kAccentColor : colors.primaryText,
                         fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
                       ),
                     ),
@@ -385,11 +391,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       case 'COD':
         return Icons.local_shipping;
       case 'MoMo':
-      case 'VNPay':
-      case 'ZaloPay':
         return Icons.account_balance_wallet;
-      case 'Thẻ tín dụng/ghi nợ':
-        return Icons.credit_card;
       default:
         return Icons.payment;
     }
@@ -405,12 +407,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildOrderItemsSection(CartSummary cartSummary) {
+    final colors = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: kCardColor,
+        color: colors.card,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: kBorderColor),
+        border: Border.all(color: colors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -421,9 +424,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               const SizedBox(width: 8),
               Text(
                 'Sản phẩm (${cartSummary.itemCount})',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
+                  color: colors.primaryText,
                 ),
               ),
             ],
@@ -436,6 +440,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildOrderItem(CartModel item) {
+    final colors = AppColors.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -450,8 +455,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               errorBuilder: (_, __, ___) => Container(
                 width: 60,
                 height: 60,
-                color: kBackgroundColor,
-                child: const Icon(Icons.image, color: kSecondaryTextColor),
+                color: colors.background,
+                child: Icon(Icons.image, color: colors.secondaryText),
               ),
             ),
           ),
@@ -462,20 +467,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               children: [
                 Text(
                   item.productName,
-                  style: const TextStyle(fontWeight: FontWeight.w500),
+                  style: TextStyle(fontWeight: FontWeight.w500, color: colors.primaryText),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'x${item.quantity}',
-                  style: const TextStyle(color: kSecondaryTextColor),
+                  style: TextStyle(color: colors.secondaryText),
                 ),
               ],
             ),
           ),
           Text(
-            '${(item.totalPrice / 1000).toStringAsFixed(0)}K đ',
+            formatVND(item.totalPrice),
             style: const TextStyle(
               fontWeight: FontWeight.bold,
               color: kAccentColor,
@@ -487,25 +492,27 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildCouponSection(CartSummary cartSummary) {
+    final colors = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: kCardColor,
+        color: colors.card,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: kBorderColor),
+        border: Border.all(color: colors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.local_offer, color: kAccentColor, size: 20),
-              SizedBox(width: 8),
+              const Icon(Icons.local_offer, color: kAccentColor, size: 20),
+              const SizedBox(width: 8),
               Text(
                 'Mã giảm giá',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
+                  color: colors.primaryText,
                 ),
               ),
             ],
@@ -535,7 +542,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           ),
                         ),
                         Text(
-                          'Giảm ${(_appliedCoupon!.discountAmount / 1000).toStringAsFixed(0)}K đ',
+                          'Giảm ${formatVND(_appliedCoupon!.discountAmount)}',
                           style: const TextStyle(
                             fontSize: 12,
                             color: kGreenColor,
@@ -559,21 +566,21 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 Expanded(
                   child: TextField(
                     controller: _couponController,
-                    style: const TextStyle(color: kPrimaryTextColor),
+                    style: TextStyle(color: colors.primaryText),
                     textCapitalization: TextCapitalization.characters,
                     decoration: InputDecoration(
                       hintText: 'Nhập mã giảm giá',
-                      hintStyle: const TextStyle(color: kSecondaryTextColor),
+                      hintStyle: TextStyle(color: colors.secondaryText),
                       filled: true,
-                      fillColor: kBackgroundColor,
+                      fillColor: colors.background,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: kBorderColor),
+                        borderSide: BorderSide(color: colors.border),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: kBorderColor),
+                        borderSide: BorderSide(color: colors.border),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -618,25 +625,27 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildNoteSection() {
+    final colors = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: kCardColor,
+        color: colors.card,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: kBorderColor),
+        border: Border.all(color: colors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.note, color: kAccentColor, size: 20),
-              SizedBox(width: 8),
+              const Icon(Icons.note, color: kAccentColor, size: 20),
+              const SizedBox(width: 8),
               Text(
                 'Ghi chú',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
+                  color: colors.primaryText,
                 ),
               ),
             ],
@@ -645,19 +654,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           TextField(
             controller: _noteController,
             maxLines: 3,
-            style: const TextStyle(color: kPrimaryTextColor),
+            style: TextStyle(color: colors.primaryText),
             decoration: InputDecoration(
               hintText: 'Ghi chú cho đơn hàng (tùy chọn)',
-              hintStyle: const TextStyle(color: kSecondaryTextColor),
+              hintStyle: TextStyle(color: colors.secondaryText),
               filled: true,
-              fillColor: kBackgroundColor,
+              fillColor: colors.background,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: kBorderColor),
+                borderSide: BorderSide(color: colors.border),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: kBorderColor),
+                borderSide: BorderSide(color: colors.border),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -671,35 +680,36 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildSummarySection(CartSummary cartSummary) {
+    final colors = AppColors.of(context);
     final discount = _appliedCoupon?.discountAmount ?? 0;
     final total = cartSummary.total - discount;
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: kCardColor,
+        color: colors.card,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: kBorderColor),
+        border: Border.all(color: colors.border),
       ),
       child: Column(
         children: [
-          _buildSummaryRow('Tạm tính', '${(cartSummary.subtotal / 1000).toStringAsFixed(0)}K đ'),
+          _buildSummaryRow('Tạm tính', formatVND(cartSummary.subtotal)),
           const SizedBox(height: 8),
-          _buildSummaryRow('Phí vận chuyển', '${(cartSummary.shippingFee / 1000).toStringAsFixed(0)}K đ'),
+          _buildSummaryRow('Phí vận chuyển', formatVND(cartSummary.shippingFee)),
           const SizedBox(height: 8),
-          _buildSummaryRow('Thuế (10%)', '${(cartSummary.tax / 1000).toStringAsFixed(0)}K đ'),
+          _buildSummaryRow('Thuế (10%)', formatVND(cartSummary.tax)),
           if (_appliedCoupon != null) ...[
             const SizedBox(height: 8),
             _buildSummaryRow(
               'Giảm giá (${_appliedCoupon!.coupon.code})',
-              '-${(discount / 1000).toStringAsFixed(0)}K đ',
+              formatVNDDiscount(discount),
               isDiscount: true,
             ),
           ],
-          const Divider(color: kBorderColor, height: 24),
+          Divider(color: colors.border, height: 24),
           _buildSummaryRow(
             'Tổng cộng',
-            '${(total / 1000).toStringAsFixed(0)}K đ',
+            formatVND(total),
             isBold: true,
           ),
         ],
@@ -708,13 +718,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildSummaryRow(String label, String value, {bool isBold = false, bool isDiscount = false}) {
+    final colors = AppColors.of(context);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
           style: TextStyle(
-            color: isDiscount ? kGreenColor : (isBold ? kPrimaryTextColor : kSecondaryTextColor),
+            color: isDiscount ? kGreenColor : (isBold ? colors.primaryText : colors.secondaryText),
             fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
             fontSize: isBold ? 16 : 14,
           ),
@@ -722,7 +733,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         Text(
           value,
           style: TextStyle(
-            color: isDiscount ? kGreenColor : (isBold ? kAccentColor : kPrimaryTextColor),
+            color: isDiscount ? kGreenColor : (isBold ? kAccentColor : colors.primaryText),
             fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
             fontSize: isBold ? 18 : 14,
           ),
@@ -732,14 +743,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Widget _buildBottomBar() {
+    final colors = AppColors.of(context);
     return Consumer<OrderViewModel>(
       builder: (context, orderViewModel, _) {
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: kCardColor,
+            color: colors.card,
             border: Border(
-              top: BorderSide(color: kBorderColor.withValues(alpha: 0.5)),
+              top: BorderSide(color: colors.border.withValues(alpha: 0.5)),
             ),
           ),
           child: SafeArea(
@@ -755,9 +767,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   void _showAddressBottomSheet(OrderViewModel orderViewModel) {
+    final colors = AppColors.of(context);
     showModalBottomSheet(
       context: context,
-      backgroundColor: kCardColor,
+      backgroundColor: colors.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -768,11 +781,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Chọn địa chỉ giao hàng',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
+                  color: colors.primaryText,
                 ),
               ),
               const SizedBox(height: 16),
@@ -787,10 +801,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: isSelected ? kAccentColor.withValues(alpha: 0.1) : kBackgroundColor,
+                      color: isSelected ? kAccentColor.withValues(alpha: 0.1) : colors.background,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: isSelected ? kAccentColor : kBorderColor,
+                        color: isSelected ? kAccentColor : colors.border,
                       ),
                     ),
                     child: Row(
@@ -803,7 +817,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 children: [
                                   Text(
                                     address.fullName,
-                                    style: const TextStyle(fontWeight: FontWeight.w500),
+                                    style: TextStyle(fontWeight: FontWeight.w500, color: colors.primaryText),
                                   ),
                                   if (address.isDefault) ...[
                                     const SizedBox(width: 8),
@@ -830,11 +844,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               const SizedBox(height: 4),
                               Text(
                                 address.phone,
-                                style: const TextStyle(color: kSecondaryTextColor, fontSize: 13),
+                                style: TextStyle(color: colors.secondaryText, fontSize: 13),
                               ),
                               Text(
                                 address.fullAddress,
-                                style: const TextStyle(color: kSecondaryTextColor, fontSize: 13),
+                                style: TextStyle(color: colors.secondaryText, fontSize: 13),
                               ),
                             ],
                           ),
@@ -862,6 +876,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   void _showAddAddressDialog(OrderViewModel orderViewModel) {
+    final colors = AppColors.of(context);
     final formKey = GlobalKey<FormState>();
     final fullNameController = TextEditingController();
     final phoneController = TextEditingController();
@@ -874,7 +889,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: kCardColor,
+      backgroundColor: colors.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -894,11 +909,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Thêm địa chỉ mới',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
+                            color: colors.primaryText,
                           ),
                         ),
                         const SizedBox(height: 20),
@@ -946,7 +962,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               onChanged: (v) => setModalState(() => isDefault = v ?? false),
                               activeColor: kAccentColor,
                             ),
-                            const Text('Đặt làm địa chỉ mặc định'),
+                            Text('Đặt làm địa chỉ mặc định', style: TextStyle(color: colors.primaryText)),
                           ],
                         ),
                         const SizedBox(height: 20),
@@ -989,23 +1005,24 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     TextInputType? keyboardType,
     String? Function(String?)? validator,
   }) {
+    final colors = AppColors.of(context);
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       validator: validator,
-      style: const TextStyle(color: kPrimaryTextColor),
+      style: TextStyle(color: colors.primaryText),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: kSecondaryTextColor),
+        labelStyle: TextStyle(color: colors.secondaryText),
         filled: true,
-        fillColor: kBackgroundColor,
+        fillColor: colors.background,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: kBorderColor),
+          borderSide: BorderSide(color: colors.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: kBorderColor),
+          borderSide: BorderSide(color: colors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),

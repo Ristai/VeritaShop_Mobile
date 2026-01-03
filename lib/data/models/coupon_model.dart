@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+
 class CouponModel {
   final String id;
   final String code;
@@ -108,12 +110,8 @@ class CouponModel {
   }
 
   String _formatPrice(double price) {
-    if (price >= 1000000) {
-      return '${(price / 1000000).toStringAsFixed(1)}tr';
-    } else if (price >= 1000) {
-      return '${(price / 1000).toStringAsFixed(0)}K';
-    }
-    return '${price.toStringAsFixed(0)}đ';
+    final formatter = NumberFormat('#,###', 'vi_VN');
+    return '${formatter.format(price.round())} VND';
   }
 
   double calculateDiscount(double orderAmount) {
