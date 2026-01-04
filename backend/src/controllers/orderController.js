@@ -5,6 +5,7 @@ const User = require('../models/User');
 const Coupon = require('../models/Coupon');
 const { successResponse, errorResponse, paginatedResponse } = require('../utils/response');
 const { sendOrderConfirmationEmail, sendOrderStatusUpdateEmail } = require('../utils/emailService');
+const { createNotification } = require('./notificationController');
 
 // @desc    Create order from cart
 // @route   POST /api/orders
@@ -130,6 +131,17 @@ const createOrder = async (req, res, next) => {
         console.error('Failed to send order confirmation email:', err);
       });
     }
+
+    // Create notification for order confirmation
+    createNotification({
+      userId: req.user._id,
+      type: 'order',
+      title: 'Đặt hàng thành công',
+      message: `Đơn hàng #${order.orderNumber} đã được xác nhận. ${paymentMethod === 'COD' ? 'Thanh toán khi nhận hàng.' : 'Vui lòng hoàn tất thanh toán.'}`,
+      data: { orderId: order._id.toString(), orderNumber: order.orderNumber },
+    }).catch(err => {
+      console.error('Failed to create order notification:', err);
+    });
 
     return successResponse(res, {
       order: {

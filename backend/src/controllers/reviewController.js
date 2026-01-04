@@ -4,6 +4,7 @@ const Order = require('../models/Order');
 const { successResponse, errorResponse, paginatedResponse } = require('../utils/response');
 const { analyzeSentiment } = require('../utils/absaService');
 const { moderateContent, shouldFlag } = require('../utils/moderationService');
+const { createNotification } = require('./notificationController');
 
 // @desc    Get reviews for a product
 // @route   GET /api/reviews/product/:productId
@@ -172,6 +173,19 @@ const createReview = async (req, res, next) => {
       moderationResult: moderationData.moderationResult,
     });
 
+    // Send notification if review was flagged
+    if (moderationData.isFlagged) {
+      createNotification({
+        userId: req.user._id,
+        type: 'system',
+        title: 'Đánh giá đang chờ duyệt',
+        message: `Đánh giá của bạn cho ${product.name} được phát hiện có nội dung không phù hợp và đang chờ kiểm duyệt.`,
+        data: { reviewId: review._id.toString(), productId: productId },
+      }).catch(err => {
+        console.error('Failed to create review flagged notification:', err);
+      });
+    }
+
     // Populate user info
     await review.populate('user', 'name avatar');
 
@@ -190,11 +204,14 @@ const updateReview = async (req, res, next) => {
     const review = await Review.findOne({
       _id: req.params.id,
       user: req.user._id,
-    });
+    }).populate('product', 'name');
 
     if (!review) {
       return errorResponse(res, 'Không tìm thấy đánh giá', 404, 'REVIEW_NOT_FOUND');
     }
+
+    // Store previous moderation status to detect transition
+    const previousModerationStatus = review.moderationStatus;
 
     // Check if content changed (text or images)
     const contentChanged = (text && text !== review.text) ||
@@ -218,6 +235,20 @@ const updateReview = async (req, res, next) => {
           review.moderationStatus = isFlagged ? 'pending' : 'approved';
           review.moderationResult = moderationResult;
           review.moderationNote = null; // Clear previous admin note
+
+          // Send notification if review was flagged after re-moderation (approved -> pending)
+          if (isFlagged && previousModerationStatus === 'approved') {
+            const productName = review.product?.name || 'sản phẩm';
+            createNotification({
+              userId: req.user._id,
+              type: 'system',
+              title: 'Đánh giá đang chờ duyệt',
+              message: `Đánh giá của bạn cho ${productName} được phát hiện có nội dung không phù hợp và đang chờ kiểm duyệt.`,
+              data: { reviewId: review._id.toString(), productId: review.product?._id?.toString() },
+            }).catch(err => {
+              console.error('Failed to create review re-flagged notification:', err);
+            });
+          }
         }
       } catch (moderationError) {
         console.error('Re-moderation failed:', moderationError.message);

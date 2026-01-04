@@ -1,7 +1,7 @@
 /// Model dữ liệu thông báo cho người dùng
 class NotificationModel {
   final String id;
-  final String type; // 'order' | 'promo'
+  final String type; // 'order' | 'promo' | 'system'
   final String title;
   final String message;
   final DateTime timestamp;
@@ -44,6 +44,25 @@ class NotificationModel {
   /// Kiểm tra thông báo có phải loại khuyến mãi không
   bool get isPromoNotification => type == 'promo';
 
+  /// Kiểm tra thông báo có phải loại hệ thống không
+  bool get isSystemNotification => type == 'system';
+
+  /// Parse từ API response (MongoDB format)
+  factory NotificationModel.fromApiJson(Map<String, dynamic> json) {
+    return NotificationModel(
+      id: json['_id'] as String? ?? json['id'] as String,
+      type: json['type'] as String,
+      title: json['title'] as String,
+      message: json['message'] as String,
+      timestamp: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'] as String)
+          : DateTime.now(),
+      isRead: json['isRead'] as bool? ?? false,
+      data: json['data'] as Map<String, dynamic>?,
+    );
+  }
+
+  /// Parse từ local JSON (legacy format)
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     return NotificationModel(
       id: json['id'] as String,

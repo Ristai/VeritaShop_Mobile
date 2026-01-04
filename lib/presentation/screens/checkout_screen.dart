@@ -9,14 +9,59 @@ import '../../data/repositories/coupon_repository.dart';
 import '../view_models/cart_view_model.dart';
 import '../view_models/order_view_model.dart';
 import '../view_models/pin_view_model.dart';
-import '../view_models/payment_view_model.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/pin_input.dart';
 import 'order_success_screen.dart';
 import 'payment_processing_screen.dart';
 
+/// Model để truyền thông tin sản phẩm khi Buy Now
+class DirectCheckoutItem {
+  final String productId;
+  final String productName;
+  final String productImageUrl;
+  final double price;
+  final int quantity;
+  final Map<String, dynamic> color;
+
+  DirectCheckoutItem({
+    required this.productId,
+    required this.productName,
+    required this.productImageUrl,
+    required this.price,
+    required this.quantity,
+    required this.color,
+  });
+
+  /// Chuyển đổi thành CartModel để sử dụng trong checkout
+  CartModel toCartModel() {
+    return CartModel(
+      id: 'direct_${DateTime.now().millisecondsSinceEpoch}',
+      userId: '',
+      productId: productId,
+      productName: productName,
+      productImageUrl: productImageUrl,
+      price: price,
+      quantity: quantity,
+      color: CartColor(
+        name: color['name'] ?? 'Mặc định',
+        code: color['hex'],
+      ),
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  /// Tạo CartSummary từ direct item
+  CartSummary toCartSummary() {
+    return CartSummary.fromItems([toCartModel()]);
+  }
+}
+
 class CheckoutScreen extends StatefulWidget {
-  const CheckoutScreen({super.key});
+  /// Sản phẩm mua ngay (nếu có). Nếu null, sử dụng giỏ hàng.
+  final DirectCheckoutItem? directCheckoutItem;
+
+  const CheckoutScreen({super.key, this.directCheckoutItem});
 
   @override
   State<CheckoutScreen> createState() => _CheckoutScreenState();
@@ -31,11 +76,32 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   bool _isApplyingCoupon = false;
   String? _couponError;
 
+  /// CartSummary cho direct checkout (Buy Now)
+  CartSummary? _directCartSummary;
+
+  /// Kiểm tra xem đang ở chế độ direct checkout hay không
+  bool get _isDirectCheckout => widget.directCheckoutItem != null;
+
+  /// Lấy CartSummary phù hợp (direct hoặc từ giỏ hàng)
+  CartSummary? _getCartSummary(CartViewModel cartViewModel) {
+    if (_isDirectCheckout) {
+      return _directCartSummary;
+    }
+    return cartViewModel.cartSummary;
+  }
+
   @override
   void initState() {
     super.initState();
+    // Khởi tạo CartSummary cho direct checkout
+    if (_isDirectCheckout) {
+      _directCartSummary = widget.directCheckoutItem!.toCartSummary();
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CartViewModel>().loadCartItems();
+      // Chỉ load cart items nếu không phải direct checkout
+      if (!_isDirectCheckout) {
+        context.read<CartViewModel>().loadCartItems();
+      }
       context.read<OrderViewModel>().loadAddresses();
     });
   }
@@ -60,9 +126,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     });
 
     try {
-      final cartSummary = context.read<CartViewModel>().cartSummary;
+      final cartSummary = _getCartSummary(context.read<CartViewModel>());
       final result = await _couponRepository.applyCoupon(code, cartSummary?.subtotal ?? 0);
-      
+
       if (result != null) {
         setState(() => _appliedCoupon = result);
         if (mounted) {
@@ -93,7 +159,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final cartViewModel = context.read<CartViewModel>();
     final orderViewModel = context.read<OrderViewModel>();
     final pinViewModel = context.read<PinViewModel>();
-    final paymentViewModel = context.read<PaymentViewModel>();
 
     if (orderViewModel.selectedAddress == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -111,7 +176,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       if (!verified) return; // User hủy hoặc nhập sai
     }
 
-    final cartSummary = cartViewModel.cartSummary;
+    final cartSummary = _getCartSummary(cartViewModel);
     if (cartSummary == null) return;
 
     final order = await orderViewModel.placeOrder(
@@ -129,8 +194,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ),
         );
       } else {
-        // COD - clear cart và chuyển đến màn hình thành công
-        await cartViewModel.clearCart();
+        // COD - clear cart (chỉ khi không phải direct checkout) và chuyển đến màn hình thành công
+        if (!_isDirectCheckout) {
+          await cartViewModel.clearCart();
+        }
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (context) => OrderSuccessScreen(order: order),
@@ -279,13 +346,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       backgroundColor: colors.background,
       appBar: AppBar(
         backgroundColor: colors.background,
-        title: Text('Thanh toán', style: TextStyle(color: colors.primaryText)),
+        title: Text(
+          _isDirectCheckout ? 'Mua ngay' : 'Thanh toán',
+          style: TextStyle(color: colors.primaryText),
+        ),
         elevation: 0,
         iconTheme: IconThemeData(color: colors.primaryText),
       ),
       body: Consumer2<CartViewModel, OrderViewModel>(
         builder: (context, cartViewModel, orderViewModel, _) {
-          if (cartViewModel.cartSummary == null) {
+          final cartSummary = _getCartSummary(cartViewModel);
+          if (cartSummary == null) {
             return const Center(child: CircularProgressIndicator());
           }
 
@@ -302,13 +373,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       const SizedBox(height: 20),
                       _buildPaymentMethodSection(orderViewModel),
                       const SizedBox(height: 20),
-                      _buildOrderItemsSection(cartViewModel.cartSummary!),
+                      _buildOrderItemsSection(cartSummary),
                       const SizedBox(height: 20),
-                      _buildCouponSection(cartViewModel.cartSummary!),
+                      _buildCouponSection(cartSummary),
                       const SizedBox(height: 20),
                       _buildNoteSection(),
                       const SizedBox(height: 20),
-                      _buildSummarySection(cartViewModel.cartSummary!),
+                      _buildSummarySection(cartSummary),
                       const SizedBox(height: 100),
                     ],
                   ),

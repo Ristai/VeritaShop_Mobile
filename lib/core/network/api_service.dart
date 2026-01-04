@@ -738,4 +738,40 @@ class ApiService {
     final response = await dio.get('/admin/reports/orders');
     return response.data;
   }
+
+  // ============ NOTIFICATION ENDPOINTS ============
+
+  // Get user notifications
+  Future<Map<String, dynamic>> getNotifications({
+    int page = 1,
+    int limit = 20,
+    String? type,
+  }) async {
+    final queryParams = <String, dynamic>{
+      'page': page,
+      'limit': limit,
+    };
+    if (type != null) queryParams['type'] = type;
+
+    final response = await dio.get('/notifications', queryParameters: queryParams);
+    return response.data;
+  }
+
+  // Mark notification as read
+  Future<Map<String, dynamic>> markNotificationAsRead(String id) async {
+    final response = await dio.patch('/notifications/$id');
+    return response.data;
+  }
+
+  // Mark all notifications as read
+  Future<Map<String, dynamic>> markAllNotificationsAsRead() async {
+    final response = await dio.patch('/notifications/read-all');
+    return response.data;
+  }
+
+  // Delete notification
+  Future<Map<String, dynamic>> deleteNotification(String id) async {
+    final response = await dio.delete('/notifications/$id');
+    return response.data;
+  }
 }

@@ -5,12 +5,12 @@ import '../../core/constants/app_colors.dart';
 import '../view_models/product_view_model.dart';
 import '../view_models/cart_view_model.dart';
 import '../view_models/wishlist_view_model.dart';
-import '../widgets/custom_button.dart';
 import '../widgets/image_zoom_viewer.dart';
 import '../widgets/sentiment_badge.dart';
 import '../../data/models/review_model.dart';
 import '../../data/repositories/review_repository.dart';
 import 'write_review_screen.dart';
+import 'checkout_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final ProductViewModel product;
@@ -25,6 +25,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   int _quantity = 1;
   int _selectedImageIndex = 0;
   bool _isAddingToCart = false;
+  bool _isBuyingNow = false;
 
   // Review state
   final ReviewRepository _reviewRepository = ReviewRepository();
@@ -126,6 +127,39 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     } finally {
       if (mounted) {
         setState(() => _isAddingToCart = false);
+      }
+    }
+  }
+
+  /// Xử lý mua ngay - chuyển thẳng đến checkout
+  Future<void> _buyNow() async {
+    setState(() => _isBuyingNow = true);
+
+    try {
+      final defaultColor = widget.product.colors.isNotEmpty
+          ? widget.product.colors.first.toMap()
+          : {'name': 'Mặc định', 'hex': '#000000'};
+
+      final directItem = DirectCheckoutItem(
+        productId: widget.product.id,
+        productName: widget.product.name,
+        productImageUrl: widget.product.imageUrl,
+        price: widget.product.price,
+        quantity: _quantity,
+        color: defaultColor,
+      );
+
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CheckoutScreen(directCheckoutItem: directItem),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isBuyingNow = false);
       }
     }
   }
@@ -1055,6 +1089,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   Widget _buildBottomBar() {
     final colors = AppColors.of(context);
+    final isDisabled = !widget.product.isInStock;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1064,41 +1100,114 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ),
       ),
       child: SafeArea(
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Tổng cộng',
-                    style: TextStyle(
-                      color: colors.secondaryText,
-                      fontSize: 12,
-                    ),
+            // Hiển thị tổng cộng
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Tổng cộng',
+                  style: TextStyle(
+                    color: colors.secondaryText,
+                    fontSize: 14,
                   ),
-                  Text(
-                    '${(widget.product.price * _quantity / 1000000).toStringAsFixed(1)}M đ',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: kAccentColor,
-                    ),
+                ),
+                Text(
+                  '${(widget.product.price * _quantity / 1000000).toStringAsFixed(1)}M đ',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: kAccentColor,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              flex: 2,
-              child: CustomButton(
-                text: _isAddingToCart ? 'Đang thêm...' : 'Thêm vào giỏ hàng',
-                onPressed: widget.product.isInStock && !_isAddingToCart
-                    ? _addToCart
-                    : null,
-                isLoading: _isAddingToCart,
-              ),
+            const SizedBox(height: 12),
+            // Hai nút: Thêm vào giỏ hàng và Mua ngay
+            Row(
+              children: [
+                // Nút Thêm vào giỏ hàng (outlined)
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: isDisabled || _isAddingToCart ? null : _addToCart,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: kAccentColor,
+                      side: BorderSide(
+                        color: isDisabled ? colors.border : kAccentColor,
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: _isAddingToCart
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: kAccentColor,
+                            ),
+                          )
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.shopping_cart_outlined,
+                                size: 18,
+                                color: isDisabled ? colors.secondaryText : kAccentColor,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Thêm giỏ',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: isDisabled ? colors.secondaryText : kAccentColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Nút Mua ngay (filled)
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: isDisabled || _isBuyingNow ? null : _buyNow,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: kAccentColor,
+                      disabledBackgroundColor: colors.border,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: _isBuyingNow
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.flash_on, size: 18),
+                              SizedBox(width: 6),
+                              Text(
+                                'Mua ngay',
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

@@ -5,8 +5,22 @@ import '../../data/models/notification_model.dart';
 import '../view_models/notification_view_model.dart';
 
 /// Màn hình hiển thị danh sách thông báo
-class NotificationsScreen extends StatelessWidget {
+class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
+
+  @override
+  State<NotificationsScreen> createState() => _NotificationsScreenState();
+}
+
+class _NotificationsScreenState extends State<NotificationsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Load notifications when screen opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<NotificationViewModel>().loadNotifications();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
