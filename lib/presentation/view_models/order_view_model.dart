@@ -194,15 +194,18 @@ class OrderViewModel extends ChangeNotifier {
         _orders.insert(0, order);
         notifyListeners();
 
-        // Gửi local notification khi đặt hàng thành công
-        await _notificationService.notifyNewOrder(order.id);
+        // Chỉ gửi notification ngay cho COD
+        // MoMo sẽ gửi notification sau khi thanh toán thành công
+        if (_selectedPaymentMethod == 'COD') {
+          await _notificationService.notifyNewOrder(order.id);
 
-        // Lên lịch nhắc nhở đánh giá sau 3 ngày
-        if (order.items.isNotEmpty) {
-          await _notificationService.scheduleReviewReminder(
-            productName: order.items.first.productName,
-            orderId: order.id,
-          );
+          // Lên lịch nhắc nhở đánh giá sau 3 ngày
+          if (order.items.isNotEmpty) {
+            await _notificationService.scheduleReviewReminder(
+              productName: order.items.first.productName,
+              orderId: order.id,
+            );
+          }
         }
 
         return order;

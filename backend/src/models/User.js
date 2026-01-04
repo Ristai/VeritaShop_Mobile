@@ -59,6 +59,14 @@ const userSchema = new mongoose.Schema({
     type: Date,
     select: false,
   },
+  pinHash: {
+    type: String,
+    select: false,
+  },
+  pinEnabled: {
+    type: Boolean,
+    default: false,
+  },
   isActive: {
     type: Boolean,
     default: true,
@@ -99,6 +107,7 @@ userSchema.methods.toJSON = function() {
   delete obj.refreshToken;
   delete obj.resetPasswordToken;
   delete obj.resetPasswordExpires;
+  delete obj.pinHash;
   return obj;
 };
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
+import '../../../core/utils/date_formatter.dart';
 import '../../view_models/admin/admin_review_view_model.dart';
 import '../../../data/models/review_model.dart';
 
@@ -22,7 +22,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen> {
 
   String _formatDate(DateTime? date) {
     if (date == null) return '';
-    return DateFormat('dd/MM/yyyy HH:mm').format(date);
+    return formatVietnamDateTime(date);
   }
 
   @override

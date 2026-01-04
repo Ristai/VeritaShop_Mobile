@@ -105,6 +105,8 @@ const createOrder = async (req, res, next) => {
       coupon: appliedCoupon,
       total,
       note,
+      // Set payment status based on payment method
+      paymentStatus: paymentMethod === 'COD' ? 'pending' : 'pending',
     });
 
     // Update product stock
@@ -114,9 +116,12 @@ const createOrder = async (req, res, next) => {
       });
     }
 
-    // Clear cart
-    cart.items = [];
-    await cart.save();
+    // Only clear cart immediately for COD orders
+    // For online payment methods, cart is cleared after successful payment
+    if (paymentMethod === 'COD') {
+      cart.items = [];
+      await cart.save();
+    }
 
     // Send order confirmation email (async, don't wait)
     const user = await User.findById(req.user._id);
@@ -133,6 +138,7 @@ const createOrder = async (req, res, next) => {
         items: order.items,
         shippingAddress: order.shippingAddress,
         paymentMethod: order.paymentMethod,
+        paymentStatus: order.paymentStatus,
         subtotal: order.subtotal,
         shippingFee: order.shippingFee,
         tax: order.tax,
@@ -144,6 +150,8 @@ const createOrder = async (req, res, next) => {
         note: order.note,
         createdAt: order.createdAt,
       },
+      // Indicate if payment is required (for MoMo and other online methods)
+      requiresPayment: paymentMethod !== 'COD',
       emailSent: true,
     }, 'Đặt hàng thành công', 201);
   } catch (error) {

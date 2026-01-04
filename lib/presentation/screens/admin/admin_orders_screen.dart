@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/date_formatter.dart';
 import '../../view_models/admin/admin_order_view_model.dart';
 
 class AdminOrdersScreen extends StatefulWidget {
@@ -28,7 +29,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
     if (dateStr == null) return '';
     final date = DateTime.tryParse(dateStr);
     if (date == null) return '';
-    return DateFormat('dd/MM/yyyy HH:mm').format(date);
+    return formatVietnamDateTime(date);
   }
 
   @override

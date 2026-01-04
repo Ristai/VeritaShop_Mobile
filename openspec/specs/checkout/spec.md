@@ -69,3 +69,66 @@ Tất cả giá tiền trong toàn bộ ứng dụng MUST được format theo c
 - **WHEN** `formattedPrice` or `formattedOriginalPrice` getters are called
 - **THEN** return price string in `XXX.XXX VND` format
 
+### Requirement: PIN Verification on Checkout
+Hệ thống MUST yêu cầu xác thực mã PIN trước khi hoàn tất đặt hàng nếu user đã bật tính năng khóa PIN.
+
+Nếu user CHƯA bật PIN (isPinEnabled = false), hệ thống MUST cho phép đặt hàng bình thường mà không yêu cầu xác thực.
+
+#### Scenario: User có PIN enabled nhấn Đặt hàng
+- **WHEN** user có PIN enabled nhấn nút "Đặt hàng"
+- **THEN** hệ thống hiển thị bottom sheet yêu cầu nhập mã PIN
+- **AND** user MUST nhập đúng mã PIN để tiếp tục
+
+#### Scenario: User nhập đúng PIN
+- **WHEN** user nhập đúng mã PIN trong dialog xác thực
+- **THEN** hệ thống đóng dialog
+- **AND** tiếp tục xử lý đặt hàng như bình thường
+
+#### Scenario: User nhập sai PIN
+- **WHEN** user nhập sai mã PIN trong dialog xác thực
+- **THEN** hệ thống hiển thị thông báo lỗi "Mã PIN không đúng"
+- **AND** cho phép user nhập lại
+
+#### Scenario: User hủy xác thực PIN
+- **WHEN** user nhấn nút hủy hoặc đóng dialog xác thực PIN
+- **THEN** hệ thống hủy bỏ quá trình đặt hàng
+- **AND** quay lại trang checkout
+
+#### Scenario: User không có PIN enabled
+- **WHEN** user CHƯA bật tính năng khóa PIN (isPinEnabled = false)
+- **AND** user nhấn nút "Đặt hàng"
+- **THEN** hệ thống xử lý đặt hàng ngay lập tức
+- **AND** KHÔNG hiển thị dialog xác thực PIN
+
+### Requirement: Order Success Notification Timing
+Hệ thống MUST chỉ gửi local notification "Đặt hàng thành công" sau khi đơn hàng đã được thanh toán hoàn tất.
+
+- Với phương thức COD: notification được gửi ngay sau khi tạo đơn hàng thành công
+- Với phương thức MoMo: notification MUST được gửi SAU khi người dùng hoàn tất thanh toán qua QR code và hệ thống xác nhận thanh toán thành công
+
+#### Scenario: User đặt hàng với COD
+- **WHEN** user đặt hàng với phương thức thanh toán COD
+- **AND** đơn hàng được tạo thành công
+- **THEN** hệ thống gửi local notification "Đặt hàng thành công" ngay lập tức
+- **AND** schedule review reminder cho sản phẩm
+
+#### Scenario: User đặt hàng với MoMo - chưa thanh toán
+- **WHEN** user đặt hàng với phương thức thanh toán MoMo
+- **AND** đơn hàng được tạo
+- **BUT** user chưa hoàn tất thanh toán qua QR
+- **THEN** hệ thống MUST NOT gửi local notification "Đặt hàng thành công"
+
+#### Scenario: User đặt hàng với MoMo - thanh toán thành công
+- **WHEN** user đặt hàng với phương thức thanh toán MoMo
+- **AND** đơn hàng được tạo
+- **AND** user quét QR và thanh toán thành công
+- **AND** hệ thống xác nhận payment status là "success"
+- **THEN** hệ thống gửi local notification "Đặt hàng thành công"
+- **AND** schedule review reminder cho sản phẩm
+
+#### Scenario: User đặt hàng với MoMo - thanh toán thất bại
+- **WHEN** user đặt hàng với phương thức thanh toán MoMo
+- **AND** đơn hàng được tạo
+- **AND** thanh toán thất bại hoặc hết thời gian
+- **THEN** hệ thống MUST NOT gửi local notification "Đặt hàng thành công"
+
