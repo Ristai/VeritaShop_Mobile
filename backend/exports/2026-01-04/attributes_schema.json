@@ -1,0 +1,64 @@
+{
+  "attributes": [
+    {
+      "name": "product_id",
+      "type": "string"
+    },
+    {
+      "name": "brand",
+      "type": "string"
+    },
+    {
+      "name": "price",
+      "type": "number"
+    },
+    {
+      "name": "price_range",
+      "type": "string"
+    },
+    {
+      "name": "stock_status",
+      "type": "string"
+    },
+    {
+      "name": "condition",
+      "type": "string"
+    },
+    {
+      "name": "overall_rating",
+      "type": "number"
+    },
+    {
+      "name": "review_count",
+      "type": "number"
+    },
+    {
+      "name": "has_active_coupon",
+      "type": "boolean"
+    },
+    {
+      "name": "Battery_score",
+      "type": "number"
+    },
+    {
+      "name": "Camera_score",
+      "type": "number"
+    },
+    {
+      "name": "Performance_score",
+      "type": "number"
+    },
+    {
+      "name": "Display_score",
+      "type": "number"
+    },
+    {
+      "name": "Design_score",
+      "type": "number"
+    },
+    {
+      "name": "Price_score",
+      "type": "number"
+    }
+  ]
+}

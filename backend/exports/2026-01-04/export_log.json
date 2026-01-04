@@ -1,0 +1,20 @@
+{
+  "export_date": "2026-01-04",
+  "started_at": "2026-01-04T21:35:54.495Z",
+  "filters": {},
+  "total_products": 1,
+  "success_count": 1,
+  "error_count": 0,
+  "products": [
+    {
+      "product_id": "694d9ca99eb4dabea15e33c3",
+      "name": "thiên đầu bùi",
+      "brand": "iPhone",
+      "file": "product_694d9ca99eb4dabea15e33c3.json",
+      "status": "success"
+    }
+  ],
+  "errors": [],
+  "completed_at": "2026-01-04T21:35:54.874Z",
+  "duration_ms": 534
+}
