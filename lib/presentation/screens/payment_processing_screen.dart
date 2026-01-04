@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/currency_formatter.dart';
+import '../../core/services/local_notification_service.dart';
 import '../../data/models/order_model.dart';
 import '../../data/models/payment_model.dart';
 import '../view_models/payment_view_model.dart';
@@ -27,6 +28,7 @@ class _PaymentProcessingScreenState extends State<PaymentProcessingScreen> {
   bool _isInitializing = true;
   bool _paymentInitiated = false;
   String? _errorMessage;
+  final LocalNotificationService _notificationService = LocalNotificationService();
 
   @override
   void initState() {
@@ -66,18 +68,31 @@ class _PaymentProcessingScreenState extends State<PaymentProcessingScreen> {
     }
   }
 
-  void _onPaymentSuccess() {
+  void _onPaymentSuccess() async {
     if (!mounted) return;
 
-    // Clear cart after successful payment
-    context.read<CartViewModel>().clearCart();
+    // Gửi notification đặt hàng thành công cho MoMo
+    await _notificationService.notifyNewOrder(widget.order.id);
 
-    // Navigate to order success screen
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (context) => OrderSuccessScreen(order: widget.order),
-      ),
-    );
+    // Lên lịch nhắc nhở đánh giá sau 3 ngày
+    if (widget.order.items.isNotEmpty) {
+      await _notificationService.scheduleReviewReminder(
+        productName: widget.order.items.first.productName,
+        orderId: widget.order.id,
+      );
+    }
+
+    // Clear cart after successful payment
+    if (mounted) {
+      context.read<CartViewModel>().clearCart();
+
+      // Navigate to order success screen
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => OrderSuccessScreen(order: widget.order),
+        ),
+      );
+    }
   }
 
   void _onPaymentFailed() {

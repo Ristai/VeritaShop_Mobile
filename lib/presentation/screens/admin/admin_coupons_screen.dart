@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import '../../../core/utils/date_formatter.dart';
 import '../../view_models/admin/admin_coupon_view_model.dart';
 
 class AdminCouponsScreen extends StatefulWidget {
@@ -27,7 +28,7 @@ class _AdminCouponsScreenState extends State<AdminCouponsScreen> {
     if (dateStr == null) return '';
     final date = DateTime.tryParse(dateStr);
     if (date == null) return '';
-    return DateFormat('dd/MM/yyyy').format(date);
+    return formatVietnamDate(date);
   }
 
   @override
@@ -316,7 +317,7 @@ class _AdminCouponsScreenState extends State<AdminCouponsScreen> {
                         child: ListTile(
                           contentPadding: EdgeInsets.zero,
                           title: const Text('Ngày bắt đầu'),
-                          subtitle: Text(DateFormat('dd/MM/yyyy').format(startDate)),
+                          subtitle: Text(formatVietnamDate(startDate)),
                           onTap: () async {
                             final date = await showDatePicker(
                               context: context,
@@ -332,7 +333,7 @@ class _AdminCouponsScreenState extends State<AdminCouponsScreen> {
                         child: ListTile(
                           contentPadding: EdgeInsets.zero,
                           title: const Text('Ngày kết thúc'),
-                          subtitle: Text(DateFormat('dd/MM/yyyy').format(endDate)),
+                          subtitle: Text(formatVietnamDate(endDate)),
                           onTap: () async {
                             final date = await showDatePicker(
                               context: context,

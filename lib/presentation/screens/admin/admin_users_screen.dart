@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/date_formatter.dart';
 import '../../view_models/admin/admin_user_view_model.dart';
 
 class AdminUsersScreen extends StatefulWidget {
@@ -32,7 +32,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     if (dateStr == null) return '';
     final date = DateTime.tryParse(dateStr);
     if (date == null) return '';
-    return DateFormat('dd/MM/yyyy').format(date);
+    return formatVietnamDate(date);
   }
 
   @override

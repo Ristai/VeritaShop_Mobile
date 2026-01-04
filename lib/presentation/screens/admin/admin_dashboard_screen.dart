@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/currency_formatter.dart';
+import '../../../core/utils/date_formatter.dart';
 import '../../view_models/admin/admin_dashboard_view_model.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
@@ -100,10 +100,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   Widget _buildWelcomeSection(AppColors colors) {
     final now = DateTime.now();
+    // Convert to Vietnam time for consistent display
+    final vnNow = toVietnamTime(now.toUtc());
     String greeting;
-    if (now.hour < 12) {
+    if (vnNow.hour < 12) {
       greeting = 'Chào buổi sáng';
-    } else if (now.hour < 18) {
+    } else if (vnNow.hour < 18) {
       greeting = 'Chào buổi chiều';
     } else {
       greeting = 'Chào buổi tối';
@@ -154,9 +156,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    _buildWelcomeStat('Hôm nay', DateFormat('dd/MM/yyyy').format(now)),
+                    _buildWelcomeStat('Hôm nay', formatVietnamDate(now)),
                     const SizedBox(width: 24),
-                    _buildWelcomeStat('Thời gian', DateFormat('HH:mm').format(now)),
+                    _buildWelcomeStat('Thời gian', DateFormatter.formatVietnamTime(now)),
                   ],
                 ),
               ],
