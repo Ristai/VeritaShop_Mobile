@@ -319,7 +319,17 @@ class _CartScreenState extends State<CartScreen> {
           CustomButton(
             text: 'Tiếp tục mua sắm',
             onPressed: () {
-              Navigator.of(context).pop();
+              if (widget.embedded) {
+                // Nếu embedded trong HomeScreen, chuyển về tab Trang chủ
+                Navigator.of(context).pushReplacementNamed('/home');
+              } else {
+                // Nếu là màn hình riêng, pop về màn hình trước
+                if (Navigator.of(context).canPop()) {
+                  Navigator.of(context).pop();
+                } else {
+                  Navigator.of(context).pushReplacementNamed('/home');
+                }
+              }
             },
           ),
         ],

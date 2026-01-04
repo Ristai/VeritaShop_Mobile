@@ -15,6 +15,10 @@ import '../../presentation/screens/admin/admin_login_screen.dart';
 import '../../presentation/screens/admin/admin_shell.dart';
 import '../../presentation/screens/pin_lock_screen.dart';
 import '../../presentation/screens/pin_setup_screen.dart';
+import '../../presentation/screens/change_password_screen.dart';
+import '../../presentation/screens/forgot_password_screen.dart';
+import '../../presentation/screens/edit_profile_screen.dart';
+import '../../presentation/screens/order_detail_screen.dart';
 
 class AppRoutes {
   static const String splash = '/splash';
@@ -33,6 +37,10 @@ class AppRoutes {
   static const String admin = '/admin';
   static const String pinLock = '/pin-lock';
   static const String pinSetup = '/pin-setup';
+  static const String changePassword = '/change-password';
+  static const String forgotPassword = '/forgot-password';
+  static const String editProfile = '/edit-profile';
+  static const String orderDetail = '/order-detail';
 
   static Map<String, WidgetBuilder> get routes {
     return {
@@ -60,6 +68,16 @@ class AppRoutes {
           );
         }
         return const PinSetupScreen();
+      },
+      changePassword: (context) => const ChangePasswordScreen(),
+      forgotPassword: (context) => const ForgotPasswordScreen(),
+      editProfile: (context) => const EditProfileScreen(),
+      orderDetail: (context) {
+        final args = ModalRoute.of(context)?.settings.arguments;
+        if (args is Map<String, dynamic>) {
+          return OrderDetailScreen(orderId: args['orderId'] ?? '');
+        }
+        return const OrderDetailScreen(orderId: '');
       },
     };
   }
