@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/currency_formatter.dart';
+import '../../../core/utils/date_formatter.dart';
 import '../../view_models/admin/admin_report_view_model.dart';
 
 class AdminReportsScreen extends StatefulWidget {
@@ -61,7 +62,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
                         TextButton(
                           onPressed: () => _selectDateRange(context, vm),
                           child: Text(
-                            '${DateFormat('dd/MM/yyyy').format(vm.fromDate)} - ${DateFormat('dd/MM/yyyy').format(vm.toDate)}',
+                            '${formatVietnamDate(vm.fromDate)} - ${formatVietnamDate(vm.toDate)}',
                           ),
                         ),
                         const Spacer(),
@@ -203,7 +204,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
                         ),
                       ),
                       Text(
-                        '${DateFormat('dd/MM').format(vm.fromDate)} - ${DateFormat('dd/MM/yyyy').format(vm.toDate)}',
+                        '${DateFormat('dd/MM').format(vm.fromDate)} - ${formatVietnamDate(vm.toDate)}',
                         style: TextStyle(color: colors.secondaryText, fontSize: 13),
                       ),
                     ],
