@@ -45,5 +45,7 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>VeritaShop cần quyền truy cập microphone để sử dụng tính năng tìm kiếm bằng giọng nói</string>
 </dict>
 </plist>

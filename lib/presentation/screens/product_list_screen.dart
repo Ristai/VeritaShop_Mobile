@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../core/constants/app_colors.dart';
 import '../../data/repositories/product_repository.dart';
 import '../view_models/product_view_model.dart';
@@ -9,6 +10,7 @@ import '../view_models/search_view_model.dart';
 import '../widgets/product_card.dart';
 import '../widgets/skeleton_loading.dart';
 import '../widgets/search_history_overlay.dart';
+import '../widgets/voice_search_button.dart';
 import 'cart_screen.dart';
 import 'product_detail_screen.dart';
 import 'profile_screen.dart';
@@ -475,58 +477,147 @@ class _ProductListScreenState extends State<ProductListScreen> {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       child: CompositedTransformTarget(
         link: _layerLink,
-        child: Container(
-          height: 44,
-          decoration: BoxDecoration(
-            color: colors.card,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: colors.border),
-          ),
-          child: TextField(
-            controller: _searchController,
-            focusNode: _searchFocusNode,
-            onChanged: _handleSearch,
-            onSubmitted: (value) {
-              _handleSearchSubmit(value);
-              _searchFocusNode.unfocus();
-            },
-            style: TextStyle(color: colors.primaryText, fontSize: 14),
-            decoration: InputDecoration(
-              hintText: 'Tìm kiếm sản phẩm...',
-              hintStyle: TextStyle(color: colors.secondaryText, fontSize: 14),
-              prefixIcon: Icon(Icons.search_rounded, color: colors.secondaryText, size: 20),
-              suffixIcon: _searchQuery.isNotEmpty
-                  ? Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (isSearching)
-                          const Padding(
-                            padding: EdgeInsets.only(right: 8),
-                            child: SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: kAccentColor,
+        child: Row(
+          children: [
+            Expanded(
+              child: Container(
+                height: 44,
+                decoration: BoxDecoration(
+                  color: colors.card,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: colors.border),
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  focusNode: _searchFocusNode,
+                  onChanged: _handleSearch,
+                  onSubmitted: (value) {
+                    _handleSearchSubmit(value);
+                    _searchFocusNode.unfocus();
+                  },
+                  style: TextStyle(color: colors.primaryText, fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: 'Tìm kiếm sản phẩm...',
+                    hintStyle: TextStyle(color: colors.secondaryText, fontSize: 14),
+                    prefixIcon: Icon(Icons.search_rounded, color: colors.secondaryText, size: 20),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (isSearching)
+                                const Padding(
+                                  padding: EdgeInsets.only(right: 8),
+                                  child: SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: kAccentColor,
+                                    ),
+                                  ),
+                                ),
+                              IconButton(
+                                icon: Icon(Icons.close_rounded, color: colors.secondaryText, size: 18),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  _handleSearch('');
+                                  context.read<SearchViewModel>().clearSearch();
+                                },
                               ),
-                            ),
-                          ),
-                        IconButton(
-                          icon: Icon(Icons.close_rounded, color: colors.secondaryText, size: 18),
-                          onPressed: () {
-                            _searchController.clear();
-                            _handleSearch('');
-                            context.read<SearchViewModel>().clearSearch();
-                          },
-                        ),
-                      ],
-                    )
-                  : null,
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            ],
+                          )
+                        : null,
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  ),
+                ),
+              ),
             ),
-          ),
+            const SizedBox(width: 8),
+            // Voice Search Button
+            Consumer<SearchViewModel>(
+              builder: (context, searchVM, _) {
+                return VoiceSearchButton(
+                  isRecording: searchVM.isRecording,
+                  isTranscribing: searchVM.isTranscribing,
+                  recordingDuration: searchVM.recordingDuration,
+                  onStartRecording: () => _handleVoiceSearchStart(searchVM),
+                  onStopRecording: () => _handleVoiceSearchStop(searchVM),
+                  onCancel: () => searchVM.cancelVoiceSearch(),
+                );
+              },
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  /// Handle voice search start
+  Future<void> _handleVoiceSearchStart(SearchViewModel searchVM) async {
+    final status = await searchVM.startVoiceSearch();
+
+    // Handle permission permanently denied - guide to settings
+    if (status?.isPermanentlyDenied == true && mounted) {
+      _showPermissionDeniedDialog();
+    }
+  }
+
+  /// Handle voice search stop and transcription
+  Future<void> _handleVoiceSearchStop(SearchViewModel searchVM) async {
+    final transcribedText = await searchVM.stopVoiceSearch();
+
+    if (transcribedText != null && transcribedText.isNotEmpty && mounted) {
+      // Set text vào search bar
+      _searchController.text = transcribedText;
+      _handleSearchSubmit(transcribedText);
+
+      // Lưu vào history
+      context.read<SearchHistoryViewModel>().addSearch(transcribedText);
+    }
+
+    // Show error if any
+    if (searchVM.voiceError != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(searchVM.voiceError!),
+          backgroundColor: kRedColor,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      searchVM.clearVoiceError();
+    }
+  }
+
+  /// Show dialog when permission is permanently denied
+  void _showPermissionDeniedDialog() {
+    final colors = AppColors.of(context);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: colors.card,
+        title: Text(
+          'Cần quyền microphone',
+          style: TextStyle(color: colors.primaryText),
+        ),
+        content: Text(
+          'Để sử dụng tính năng tìm kiếm bằng giọng nói, vui lòng cấp quyền truy cập microphone trong Cài đặt.',
+          style: TextStyle(color: colors.secondaryText),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Hủy', style: TextStyle(color: colors.secondaryText)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              openAppSettings();
+            },
+            child: const Text('Mở Cài đặt', style: TextStyle(color: kAccentColor)),
+          ),
+        ],
       ),
     );
   }

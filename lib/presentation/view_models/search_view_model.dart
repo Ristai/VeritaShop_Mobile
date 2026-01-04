@@ -1,11 +1,15 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../data/models/product_model.dart';
 import '../../data/repositories/product_repository.dart';
+import '../../core/services/voice_search_service.dart';
 
 /// ViewModel quản lý server-side product search với debounce
+/// Bao gồm cả voice search functionality
 class SearchViewModel extends ChangeNotifier {
   final ProductRepository _productRepository;
+  final VoiceSearchService _voiceSearchService;
 
   // Search state
   String _searchQuery = '';
@@ -16,13 +20,24 @@ class SearchViewModel extends ChangeNotifier {
   int _totalPages = 1;
   int _totalResults = 0;
 
+  // Voice search state
+  bool _isRecording = false;
+  bool _isTranscribing = false;
+  Duration _recordingDuration = Duration.zero;
+  String? _voiceError;
+  Timer? _recordingTimer;
+  static const Duration _maxRecordingDuration = Duration(seconds: 30);
+
   // Debounce timer
   Timer? _debounceTimer;
   static const Duration _debounceDuration = Duration(milliseconds: 300);
   static const int _minQueryLength = 2;
 
-  SearchViewModel({ProductRepository? productRepository})
-      : _productRepository = productRepository ?? ProductRepository();
+  SearchViewModel({
+    ProductRepository? productRepository,
+    VoiceSearchService? voiceSearchService,
+  })  : _productRepository = productRepository ?? ProductRepository(),
+        _voiceSearchService = voiceSearchService ?? VoiceSearchService();
 
   // Getters
   String get searchQuery => _searchQuery;
@@ -35,6 +50,13 @@ class SearchViewModel extends ChangeNotifier {
   bool get hasResults => _searchResults.isNotEmpty;
   bool get hasError => _errorMessage != null;
   bool get isQueryValid => _searchQuery.length >= _minQueryLength;
+
+  // Voice search getters
+  bool get isRecording => _isRecording;
+  bool get isTranscribing => _isTranscribing;
+  Duration get recordingDuration => _recordingDuration;
+  String? get voiceError => _voiceError;
+  bool get isVoiceSearchActive => _isRecording || _isTranscribing;
 
   /// Tìm kiếm với debounce - gọi khi user đang gõ
   void search(String query) {
@@ -160,9 +182,146 @@ class SearchViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  // =========================================
+  // Voice Search Methods
+  // =========================================
+
+  /// Bắt đầu voice search
+  /// Returns: PermissionStatus để UI xử lý nếu cần
+  Future<PermissionStatus?> startVoiceSearch() async {
+    if (_isRecording || _isTranscribing) {
+      return null;
+    }
+
+    _voiceError = null;
+    notifyListeners();
+
+    // Request permission
+    final status = await _voiceSearchService.requestPermission();
+
+    if (status.isDenied) {
+      _voiceError = 'Vui lòng cấp quyền microphone để sử dụng tìm kiếm giọng nói';
+      notifyListeners();
+      return status;
+    }
+
+    if (status.isPermanentlyDenied) {
+      _voiceError = 'Quyền microphone bị từ chối. Vui lòng vào Cài đặt để bật.';
+      notifyListeners();
+      return status;
+    }
+
+    try {
+      await _voiceSearchService.startRecording();
+      _isRecording = true;
+      _recordingDuration = Duration.zero;
+      notifyListeners();
+
+      // Start recording duration timer
+      _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        _recordingDuration = Duration(seconds: timer.tick);
+        notifyListeners();
+
+        // Auto-stop at max duration
+        if (_recordingDuration >= _maxRecordingDuration) {
+          stopVoiceSearch();
+        }
+      });
+    } on VoiceSearchException catch (e) {
+      _voiceError = e.message;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('SearchViewModel: Voice search start error: $e');
+      _voiceError = 'Không thể bắt đầu ghi âm';
+      notifyListeners();
+    }
+
+    return status;
+  }
+
+  /// Dừng voice search và transcribe
+  /// Returns: Transcribed text hoặc null nếu có lỗi
+  Future<String?> stopVoiceSearch() async {
+    if (!_isRecording) {
+      return null;
+    }
+
+    // Stop recording timer
+    _recordingTimer?.cancel();
+    _recordingTimer = null;
+
+    _isRecording = false;
+    _isTranscribing = true;
+    _voiceError = null;
+    notifyListeners();
+
+    try {
+      // Stop recording và lấy file path
+      final filePath = await _voiceSearchService.stopRecording();
+      if (filePath == null) {
+        _isTranscribing = false;
+        _voiceError = 'Không có file ghi âm';
+        notifyListeners();
+        return null;
+      }
+
+      // Transcribe audio
+      final transcribedText = await _voiceSearchService.transcribeAudio(filePath);
+
+      _isTranscribing = false;
+      _recordingDuration = Duration.zero;
+      notifyListeners();
+
+      if (transcribedText.isNotEmpty) {
+        // Không auto-search, trả về text để UI xử lý
+        return transcribedText;
+      } else {
+        _voiceError = 'Không nhận dạng được giọng nói, vui lòng thử lại';
+        notifyListeners();
+        return null;
+      }
+    } on VoiceSearchException catch (e) {
+      _isTranscribing = false;
+      _recordingDuration = Duration.zero;
+      _voiceError = e.message;
+      notifyListeners();
+      return null;
+    } catch (e) {
+      debugPrint('SearchViewModel: Voice search stop error: $e');
+      _isTranscribing = false;
+      _recordingDuration = Duration.zero;
+      _voiceError = 'Đã xảy ra lỗi, vui lòng thử lại';
+      notifyListeners();
+      return null;
+    }
+  }
+
+  /// Hủy voice search đang thực hiện
+  Future<void> cancelVoiceSearch() async {
+    _recordingTimer?.cancel();
+    _recordingTimer = null;
+
+    if (_isRecording) {
+      await _voiceSearchService.cancelRecording();
+    }
+
+    _isRecording = false;
+    _isTranscribing = false;
+    _recordingDuration = Duration.zero;
+    _voiceError = null;
+    notifyListeners();
+  }
+
+  /// Clear voice error
+  void clearVoiceError() {
+    _voiceError = null;
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _debounceTimer?.cancel();
+    _recordingTimer?.cancel();
     super.dispose();
   }
 }
