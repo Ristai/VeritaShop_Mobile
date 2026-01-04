@@ -1,13 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
-const { 
-  getProfile, 
-  updateProfile, 
-  addAddress, 
-  updateAddress, 
+const {
+  getProfile,
+  updateProfile,
+  addAddress,
+  updateAddress,
   deleteAddress,
-  changePassword 
+  changePassword,
+  setPin,
+  verifyPin,
+  togglePin,
+  deletePin,
+  getPinStatus,
 } = require('../controllers/userController');
 const { auth } = require('../middleware/auth');
 const validate = require('../middleware/validate');
@@ -68,5 +73,12 @@ router.delete('/addresses/:addressId', deleteAddress);
 
 // Password route
 router.put('/password', changePasswordValidation, validate, changePassword);
+
+// PIN routes
+router.get('/pin/status', getPinStatus);
+router.post('/pin', setPin);
+router.post('/pin/verify', verifyPin);
+router.put('/pin/toggle', togglePin);
+router.delete('/pin', deletePin);
 
 module.exports = router;

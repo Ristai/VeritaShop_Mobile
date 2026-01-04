@@ -175,7 +175,7 @@ const changePassword = async (req, res, next) => {
     }
 
     const user = await User.findById(req.user._id).select('+password');
-    
+
     const isMatch = await user.comparePassword(currentPassword);
     if (!isMatch) {
       return errorResponse(res, 'Mật khẩu hiện tại không đúng', 400, 'WRONG_PASSWORD');
@@ -190,6 +190,122 @@ const changePassword = async (req, res, next) => {
   }
 };
 
+// ============== PIN MANAGEMENT ==============
+
+// @desc    Set or update PIN
+// @route   POST /api/users/pin
+const setPin = async (req, res, next) => {
+  try {
+    const { pinHash } = req.body;
+
+    if (!pinHash) {
+      return errorResponse(res, 'Vui lòng cung cấp mã PIN', 400, 'MISSING_PIN_HASH');
+    }
+
+    // Validate pinHash format (should be SHA-256 hash - 64 hex chars)
+    if (!/^[a-f0-9]{64}$/i.test(pinHash)) {
+      return errorResponse(res, 'Mã PIN không hợp lệ', 400, 'INVALID_PIN_HASH');
+    }
+
+    await User.findByIdAndUpdate(req.user._id, {
+      pinHash: pinHash,
+      pinEnabled: true,
+    });
+
+    return successResponse(res, {
+      pinEnabled: true,
+    }, 'Đã thiết lập mã PIN');
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Verify PIN
+// @route   POST /api/users/pin/verify
+const verifyPin = async (req, res, next) => {
+  try {
+    const { pinHash } = req.body;
+
+    if (!pinHash) {
+      return errorResponse(res, 'Vui lòng cung cấp mã PIN', 400, 'MISSING_PIN_HASH');
+    }
+
+    const user = await User.findById(req.user._id).select('+pinHash');
+
+    if (!user.pinHash) {
+      return errorResponse(res, 'Chưa thiết lập mã PIN', 400, 'PIN_NOT_SET');
+    }
+
+    const isValid = user.pinHash === pinHash;
+
+    return successResponse(res, {
+      valid: isValid,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Toggle PIN enabled/disabled
+// @route   PUT /api/users/pin/toggle
+const togglePin = async (req, res, next) => {
+  try {
+    const { enabled } = req.body;
+
+    if (typeof enabled !== 'boolean') {
+      return errorResponse(res, 'Vui lòng cung cấp trạng thái', 400, 'MISSING_ENABLED');
+    }
+
+    // If enabling, check if PIN is set
+    if (enabled) {
+      const user = await User.findById(req.user._id).select('+pinHash');
+      if (!user.pinHash) {
+        return errorResponse(res, 'Chưa thiết lập mã PIN', 400, 'PIN_NOT_SET');
+      }
+    }
+
+    await User.findByIdAndUpdate(req.user._id, {
+      pinEnabled: enabled,
+    });
+
+    return successResponse(res, {
+      pinEnabled: enabled,
+    }, enabled ? 'Đã bật khóa PIN' : 'Đã tắt khóa PIN');
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Delete PIN
+// @route   DELETE /api/users/pin
+const deletePin = async (req, res, next) => {
+  try {
+    await User.findByIdAndUpdate(req.user._id, {
+      pinHash: null,
+      pinEnabled: false,
+    });
+
+    return successResponse(res, null, 'Đã xóa mã PIN');
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get PIN status
+// @route   GET /api/users/pin/status
+const getPinStatus = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id).select('+pinHash');
+
+    return successResponse(res, {
+      pinEnabled: user.pinEnabled || false,
+      hasPinSet: !!user.pinHash,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getProfile,
   updateProfile,
@@ -197,4 +313,9 @@ module.exports = {
   updateAddress,
   deleteAddress,
   changePassword,
+  setPin,
+  verifyPin,
+  togglePin,
+  deletePin,
+  getPinStatus,
 };

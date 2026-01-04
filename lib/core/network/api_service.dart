@@ -287,6 +287,38 @@ class ApiService {
     return response.data;
   }
 
+  // PIN endpoints
+  Future<Map<String, dynamic>> getPinStatus() async {
+    final response = await dio.get('/users/pin/status');
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> setPin(String pinHash) async {
+    final response = await dio.post('/users/pin', data: {
+      'pinHash': pinHash,
+    });
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> verifyPinCloud(String pinHash) async {
+    final response = await dio.post('/users/pin/verify', data: {
+      'pinHash': pinHash,
+    });
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> togglePinCloud(bool enabled) async {
+    final response = await dio.put('/users/pin/toggle', data: {
+      'enabled': enabled,
+    });
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> deletePinCloud() async {
+    final response = await dio.delete('/users/pin');
+    return response.data;
+  }
+
   // Related Products
   Future<Map<String, dynamic>> getRelatedProducts(String productId, {int limit = 4}) async {
     final response = await dio.get('/products/$productId/related', queryParameters: {
@@ -419,6 +451,28 @@ class ApiService {
 
   Future<Map<String, dynamic>> getCouponByCode(String code) async {
     final response = await dio.get('/coupons/$code');
+    return response.data;
+  }
+
+  // ============ PAYMENT ENDPOINTS ============
+
+  // MoMo Payment - Create payment
+  Future<Map<String, dynamic>> createMomoPayment(String orderId) async {
+    final response = await dio.post('/payments/momo/create', data: {
+      'orderId': orderId,
+    });
+    return response.data;
+  }
+
+  // MoMo Payment - Check status
+  Future<Map<String, dynamic>> checkMomoPaymentStatus(String orderId) async {
+    final response = await dio.get('/payments/momo/status/$orderId');
+    return response.data;
+  }
+
+  // Payment - Get by order ID
+  Future<Map<String, dynamic>> getPaymentByOrder(String orderId) async {
+    final response = await dio.get('/payments/$orderId');
     return response.data;
   }
 

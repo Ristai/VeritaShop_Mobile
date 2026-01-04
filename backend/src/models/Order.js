@@ -53,6 +53,15 @@ const orderSchema = new mongoose.Schema({
     enum: ['COD', 'MoMo', 'VNPay', 'ZaloPay', 'Card'],
     default: 'COD',
   },
+  payment: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Payment',
+  },
+  paymentStatus: {
+    type: String,
+    enum: ['pending', 'paid', 'failed', 'refunded'],
+    default: 'pending',
+  },
   subtotal: {
     type: Number,
     required: true,
