@@ -9,6 +9,7 @@ const crypto = require('crypto');
 const { successResponse, errorResponse } = require('../utils/response');
 const { sendOrderStatusUpdateEmail, sendPasswordResetEmail } = require('../utils/emailService');
 const { getFlaggedCategoriesVietnamese, MODERATION_CATEGORIES } = require('../utils/moderationService');
+const { createNotification } = require('./notificationController');
 
 // Dashboard Stats
 const getDashboardStats = async (req, res) => {
@@ -193,7 +194,7 @@ const updateOrderStatus = async (req, res) => {
   try {
     const { status } = req.body;
     const validStatuses = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'completed', 'cancelled', 'refunded'];
-    
+
     if (!validStatuses.includes(status)) {
       return errorResponse(res, 'Trạng thái không hợp lệ', 400);
     }
@@ -212,6 +213,53 @@ const updateOrderStatus = async (req, res) => {
         await sendOrderStatusUpdateEmail(order.user.email, order.orderNumber, status);
       } catch (emailError) {
         console.error('Failed to send status update email:', emailError);
+      }
+    }
+
+    // Create in-app notification for user
+    if (order.user?._id) {
+      const statusMessages = {
+        confirmed: {
+          title: 'Đơn hàng đã xác nhận',
+          message: `Đơn hàng #${order.orderNumber} đã được xác nhận và đang chờ xử lý.`,
+        },
+        processing: {
+          title: 'Đơn hàng đang xử lý',
+          message: `Đơn hàng #${order.orderNumber} đang được chuẩn bị.`,
+        },
+        shipped: {
+          title: 'Đơn hàng đang giao',
+          message: `Đơn hàng #${order.orderNumber} đã được giao cho đơn vị vận chuyển.`,
+        },
+        delivered: {
+          title: 'Giao hàng thành công',
+          message: `Đơn hàng #${order.orderNumber} đã được giao. Cảm ơn bạn đã mua sắm!`,
+        },
+        completed: {
+          title: 'Đơn hàng hoàn thành',
+          message: `Đơn hàng #${order.orderNumber} đã hoàn thành. Hãy đánh giá sản phẩm nhé!`,
+        },
+        cancelled: {
+          title: 'Đơn hàng đã hủy',
+          message: `Đơn hàng #${order.orderNumber} đã bị hủy.`,
+        },
+        refunded: {
+          title: 'Hoàn tiền thành công',
+          message: `Đơn hàng #${order.orderNumber} đã được hoàn tiền.`,
+        },
+      };
+
+      const notification = statusMessages[status];
+      if (notification) {
+        createNotification({
+          userId: order.user._id,
+          type: 'order',
+          title: notification.title,
+          message: notification.message,
+          data: { orderId: order._id.toString(), orderNumber: order.orderNumber, status },
+        }).catch(err => {
+          console.error('Failed to create order status notification:', err);
+        });
       }
     }
 
@@ -572,6 +620,20 @@ const approveReviewModeration = async (req, res) => {
 
     if (!review) return errorResponse(res, 'Không tìm thấy đánh giá', 404);
 
+    // Send notification to user about approved review
+    if (review.user?._id) {
+      const productName = review.product?.name || 'sản phẩm';
+      createNotification({
+        userId: review.user._id,
+        type: 'system',
+        title: 'Đánh giá đã được duyệt',
+        message: `Đánh giá của bạn cho ${productName} đã được duyệt.`,
+        data: { reviewId: review._id.toString(), productId: review.product?._id?.toString() },
+      }).catch(err => {
+        console.error('Failed to create review approved notification:', err);
+      });
+    }
+
     successResponse(res, { review }, 'Đã duyệt đánh giá');
   } catch (error) {
     errorResponse(res, error.message, 500);
@@ -591,9 +653,23 @@ const rejectReviewModeration = async (req, res) => {
         moderationNote: note || 'Bị từ chối do vi phạm nội dung',
       },
       { new: true }
-    );
+    ).populate('product', 'name');
 
     if (!review) return errorResponse(res, 'Không tìm thấy đánh giá', 404);
+
+    // Send notification to user about rejected review
+    if (review.user) {
+      const productName = review.product?.name || 'sản phẩm';
+      createNotification({
+        userId: review.user,
+        type: 'system',
+        title: 'Đánh giá bị từ chối',
+        message: `Đánh giá của bạn cho ${productName} đã bị từ chối do vi phạm quy định.`,
+        data: { reviewId: review._id.toString(), productId: review.product?._id?.toString() },
+      }).catch(err => {
+        console.error('Failed to create review rejected notification:', err);
+      });
+    }
 
     // Update product rating (exclude rejected review)
     await Review.calcAverageRating(review.product);

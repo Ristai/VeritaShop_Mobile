@@ -1,16 +1,28 @@
 import 'package:flutter/foundation.dart';
 import '../../data/models/notification_model.dart';
+import '../../data/repositories/notification_repository.dart';
 import '../../core/services/local_notification_service.dart';
 
 /// ViewModel quản lý thông báo cho người dùng
 class NotificationViewModel extends ChangeNotifier {
   final LocalNotificationService _notificationService = LocalNotificationService();
+  final NotificationRepository _notificationRepository;
 
   List<NotificationModel> _notifications = [];
+  Set<String> _knownNotificationIds = {}; // Track IDs đã biết
   bool _isLoading = false;
   String _selectedFilter = 'all'; // 'all', 'order', 'promo'
   bool _notificationsEnabled = true;
   bool _soundEnabled = true;
+  String? _errorMessage;
+  int _serverUnreadCount = 0;
+
+  NotificationViewModel({NotificationRepository? notificationRepository})
+      : _notificationRepository = notificationRepository ?? NotificationRepository() {
+    // Only initialize notification service, don't load data yet
+    // Data will be loaded when user is authenticated or when screen is opened
+    _initNotificationService();
+  }
 
   List<NotificationModel> get notifications {
     if (_selectedFilter == 'all') {
@@ -24,12 +36,16 @@ class NotificationViewModel extends ChangeNotifier {
   String get selectedFilter => _selectedFilter;
   bool get notificationsEnabled => _notificationsEnabled;
   bool get soundEnabled => _soundEnabled;
+  String? get errorMessage => _errorMessage;
 
-  int get unreadCount => _notifications.where((n) => !n.isRead).length;
+  int get unreadCount => _serverUnreadCount > 0
+      ? _serverUnreadCount
+      : _notifications.where((n) => !n.isRead).length;
 
-  NotificationViewModel() {
-    _initNotificationService();
-    loadNotifications();
+  /// Khởi tạo notification service và load notifications
+  Future<void> initialize() async {
+    await _initNotificationService();
+    await loadNotifications();
   }
 
   /// Khởi tạo notification service
@@ -90,22 +106,77 @@ class NotificationViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Tải danh sách thông báo (mock data)
-  Future<void> loadNotifications() async {
+  /// Tải danh sách thông báo từ API
+  Future<void> loadNotifications({bool showPushForNew = true}) async {
+    debugPrint('NotificationViewModel: loadNotifications called');
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
 
-    // Giả lập delay network
-    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      final result = await _notificationRepository.getNotifications();
+      debugPrint('NotificationViewModel: Got ${result.notifications.length} notifications, unread: ${result.unreadCount}');
 
-    _notifications = _getMockNotifications();
+      // Detect new notifications and show push notification
+      if (showPushForNew && _notificationsEnabled && _knownNotificationIds.isNotEmpty) {
+        for (final notification in result.notifications) {
+          if (!_knownNotificationIds.contains(notification.id) && !notification.isRead) {
+            // This is a new notification - show push notification
+            debugPrint('NotificationViewModel: New notification detected: ${notification.title}');
+            await _showPushNotificationForNew(notification);
+          }
+        }
+      }
+
+      // Update known IDs
+      _knownNotificationIds = result.notifications.map((n) => n.id).toSet();
+
+      _notifications = result.notifications;
+      _serverUnreadCount = result.unreadCount;
+      _errorMessage = null;
+    } catch (e) {
+      debugPrint('NotificationViewModel: Error loading notifications: $e');
+      _errorMessage = 'Không thể tải thông báo';
+      // Giữ nguyên notifications hiện tại nếu có lỗi
+    }
+
     _isLoading = false;
     notifyListeners();
   }
 
-  /// Thêm notification mới vào danh sách
+  /// Hiển thị push notification cho notification mới
+  Future<void> _showPushNotificationForNew(NotificationModel notification) async {
+    if (notification.isOrderNotification) {
+      // Extract orderId from data if available
+      final orderId = notification.data?['orderId'] ?? notification.data?['orderNumber'] ?? '';
+      await _notificationService.showInstantNotification(
+        id: notification.id.hashCode,
+        title: notification.title,
+        body: notification.message,
+        payload: 'order:$orderId',
+      );
+    } else if (notification.isPromoNotification) {
+      final promoCode = notification.data?['couponCode'] ?? '';
+      await _notificationService.showInstantNotification(
+        id: notification.id.hashCode,
+        title: notification.title,
+        body: notification.message,
+        payload: promoCode.isNotEmpty ? 'promo:$promoCode' : 'promo',
+      );
+    } else {
+      await _notificationService.showInstantNotification(
+        id: notification.id.hashCode,
+        title: notification.title,
+        body: notification.message,
+        payload: 'notification:${notification.id}',
+      );
+    }
+  }
+
+  /// Thêm notification mới vào danh sách (local)
   void addNotification(NotificationModel notification) {
     _notifications.insert(0, notification);
+    _serverUnreadCount++;
     notifyListeners();
   }
 
@@ -116,44 +187,56 @@ class NotificationViewModel extends ChangeNotifier {
   }
 
   /// Đánh dấu một thông báo đã đọc
-  void markAsRead(String notificationId) {
+  Future<void> markAsRead(String notificationId) async {
     final index = _notifications.indexWhere((n) => n.id == notificationId);
-    if (index != -1) {
+    if (index != -1 && !_notifications[index].isRead) {
+      // Update local state first
       _notifications[index] = _notifications[index].copyWith(isRead: true);
+      if (_serverUnreadCount > 0) _serverUnreadCount--;
       notifyListeners();
+
+      // Sync với server
+      await _notificationRepository.markAsRead(notificationId);
     }
   }
 
   /// Đánh dấu tất cả thông báo đã đọc
-  void markAllAsRead() {
+  Future<void> markAllAsRead() async {
+    // Update local state first
     _notifications = _notifications.map((n) => n.copyWith(isRead: true)).toList();
+    _serverUnreadCount = 0;
     notifyListeners();
+
+    // Sync với server
+    await _notificationRepository.markAllAsRead();
   }
 
   /// Xóa thông báo
-  void deleteNotification(String notificationId) {
+  Future<void> deleteNotification(String notificationId) async {
+    final notification = _notifications.firstWhere(
+      (n) => n.id == notificationId,
+      orElse: () => throw Exception('Notification not found'),
+    );
+
+    // Update local state first
     _notifications.removeWhere((n) => n.id == notificationId);
+    if (!notification.isRead && _serverUnreadCount > 0) _serverUnreadCount--;
     notifyListeners();
+
+    // Sync với server
+    await _notificationRepository.deleteNotification(notificationId);
   }
 
   // ==================== LOCAL NOTIFICATION METHODS ====================
 
-  /// Gửi thông báo đơn hàng mới
+  /// Gửi thông báo đơn hàng mới (local push notification)
   Future<void> sendOrderNotification(String orderId) async {
     if (!_notificationsEnabled) return;
 
     await _notificationService.notifyNewOrder(orderId);
 
-    // Thêm vào danh sách thông báo trong app
-    addNotification(NotificationModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      type: 'order',
-      title: '🎉 Đặt hàng thành công!',
-      message: 'Đơn hàng #$orderId đã được xác nhận.',
-      timestamp: DateTime.now(),
-      isRead: false,
-      data: {'orderId': orderId},
-    ));
+    // Refresh từ server để lấy notification mới
+    await loadNotifications();
   }
 
   /// Gửi thông báo cập nhật trạng thái đơn hàng
@@ -168,37 +251,8 @@ class NotificationViewModel extends ChangeNotifier {
       status: status,
     );
 
-    // Thêm vào danh sách
-    String title;
-    String message;
-
-    switch (status.toLowerCase()) {
-      case 'processing':
-        title = '📦 Đơn hàng đang xử lý';
-        message = 'Đơn hàng #$orderId đang được chuẩn bị';
-        break;
-      case 'shipped':
-        title = '🚚 Đơn hàng đang giao';
-        message = 'Đơn hàng #$orderId đã được giao cho đơn vị vận chuyển';
-        break;
-      case 'delivered':
-        title = '✅ Giao hàng thành công';
-        message = 'Đơn hàng #$orderId đã được giao';
-        break;
-      default:
-        title = '📋 Cập nhật đơn hàng';
-        message = 'Đơn hàng #$orderId: $status';
-    }
-
-    addNotification(NotificationModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      type: 'order',
-      title: title,
-      message: message,
-      timestamp: DateTime.now(),
-      isRead: false,
-      data: {'orderId': orderId},
-    ));
+    // Refresh từ server để lấy notification mới
+    await loadNotifications();
   }
 
   /// Gửi thông báo khuyến mãi
@@ -215,15 +269,8 @@ class NotificationViewModel extends ChangeNotifier {
       promoCode: promoCode,
     );
 
-    addNotification(NotificationModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      type: 'promo',
-      title: '🔥 $title',
-      message: description,
-      timestamp: DateTime.now(),
-      isRead: false,
-      data: promoCode != null ? {'couponCode': promoCode} : null,
-    ));
+    // Refresh từ server để lấy notification mới
+    await loadNotifications();
   }
 
   /// Đặt lịch nhắc nhở giỏ hàng
@@ -249,72 +296,9 @@ class NotificationViewModel extends ChangeNotifier {
     await _notificationService.cancelAllNotifications();
   }
 
-  /// Mock data cho thông báo
-  List<NotificationModel> _getMockNotifications() {
-    final now = DateTime.now();
-    return [
-      NotificationModel(
-        id: '1',
-        type: 'order',
-        title: 'Đơn hàng đã được xác nhận',
-        message: 'Đơn hàng #VT2024001 của bạn đã được xác nhận và đang được chuẩn bị.',
-        timestamp: now.subtract(const Duration(minutes: 5)),
-        isRead: false,
-        data: {'orderId': 'VT2024001'},
-      ),
-      NotificationModel(
-        id: '2',
-        type: 'promo',
-        title: 'Flash Sale - Giảm 30%!',
-        message: 'iPhone 15 Pro Max đang giảm giá 30% chỉ trong hôm nay. Nhanh tay đặt hàng!',
-        timestamp: now.subtract(const Duration(hours: 1)),
-        isRead: false,
-        data: {'productId': 'iphone-15-pro-max'},
-      ),
-      NotificationModel(
-        id: '3',
-        type: 'order',
-        title: 'Đơn hàng đang được giao',
-        message: 'Đơn hàng #VT2024000 đang trên đường giao đến bạn. Dự kiến nhận hàng trong 2 giờ.',
-        timestamp: now.subtract(const Duration(hours: 3)),
-        isRead: true,
-        data: {'orderId': 'VT2024000'},
-      ),
-      NotificationModel(
-        id: '4',
-        type: 'promo',
-        title: 'Mã giảm giá mới dành cho bạn',
-        message: 'Nhập mã VERITA50K để được giảm 50.000đ cho đơn hàng từ 500.000đ.',
-        timestamp: now.subtract(const Duration(hours: 6)),
-        isRead: true,
-        data: {'couponCode': 'VERITA50K'},
-      ),
-      NotificationModel(
-        id: '5',
-        type: 'order',
-        title: 'Đơn hàng đã hoàn thành',
-        message: 'Đơn hàng #VT2023999 đã được giao thành công. Cảm ơn bạn đã mua sắm!',
-        timestamp: now.subtract(const Duration(days: 1)),
-        isRead: true,
-        data: {'orderId': 'VT2023999'},
-      ),
-      NotificationModel(
-        id: '6',
-        type: 'promo',
-        title: 'Sản phẩm mới - Samsung Galaxy S24',
-        message: 'Samsung Galaxy S24 Ultra vừa ra mắt! Đặt trước ngay để nhận quà tặng hấp dẫn.',
-        timestamp: now.subtract(const Duration(days: 2)),
-        isRead: true,
-        data: {'productId': 'samsung-s24-ultra'},
-      ),
-      NotificationModel(
-        id: '7',
-        type: 'promo',
-        title: 'Ưu đãi cuối tuần',
-        message: 'Giảm thêm 10% cho tất cả phụ kiện điện thoại trong cuối tuần này.',
-        timestamp: now.subtract(const Duration(days: 3)),
-        isRead: true,
-      ),
-    ];
+  /// Clear error message
+  void clearError() {
+    _errorMessage = null;
+    notifyListeners();
   }
 }
