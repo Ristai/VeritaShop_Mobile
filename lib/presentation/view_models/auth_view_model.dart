@@ -77,10 +77,14 @@ class HybridStorage {
   }
   
   Future<void> deleteAll() async {
-    final keys = ['access_token', 'refresh_token', 'user_id', 'user_name', 'user_email', 'user_avatar', 'user_role'];
-    for (final key in keys) {
+    // Auth keys - chỉ xóa thông tin đăng nhập
+    final authKeys = ['access_token', 'refresh_token', 'user_id', 'user_name', 'user_email', 'user_avatar', 'user_role'];
+    for (final key in authKeys) {
       await delete(key: key);
     }
+
+    // KHÔNG xóa PIN keys khi logout - PIN được giữ lại theo device
+    // User cần nhập lại PIN khi login lại
   }
 }
 

@@ -12,6 +12,7 @@ const orderRoutes = require('./routes/orderRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const couponRoutes = require('./routes/couponRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
@@ -44,6 +45,7 @@ app.get('/api', (req, res) => {
       reviews: '/api/reviews',
       users: '/api/users',
       upload: '/api/upload',
+      payments: '/api/payments',
       admin: '/api/admin',
     }
   });
@@ -58,6 +60,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/coupons', couponRoutes);
+app.use('/api/payments', paymentRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Error handling

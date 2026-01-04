@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/services/local_notification_service.dart';
 import '../view_models/theme_view_model.dart';
+import '../view_models/pin_view_model.dart';
+import '../view_models/auth_view_model.dart';
 import '../widgets/custom_switch.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -15,6 +19,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _realtimeNotify = true;
   bool _soundEnabled = true;
   String _language = 'Tiếng Việt';
+  final LocalNotificationService _notificationService = LocalNotificationService();
+
+  @override
+  void initState() {
+    super.initState();
+    // Refresh PIN status từ cloud khi vào Settings
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<PinViewModel>().checkPinStatus();
+      // Initialize notification service
+      if (!kIsWeb) {
+        _notificationService.initialize();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,10 +71,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _soundEnabled,
                 (value) => setState(() => _soundEnabled = value),
               ),
+              if (!kIsWeb) ...[
+                _buildActionTile(
+                  'Test thông báo ngay',
+                  'Gửi thông báo test ngay lập tức',
+                  Icons.send,
+                  _testInstantNotification,
+                ),
+                _buildActionTile(
+                  'Test thông báo lên lịch',
+                  'Gửi thông báo sau 5 giây',
+                  Icons.schedule,
+                  _testScheduledNotification,
+                ),
+                _buildActionTile(
+                  'Test thông báo đơn hàng',
+                  'Gửi thông báo đặt hàng thành công',
+                  Icons.shopping_bag,
+                  _testOrderNotification,
+                ),
+                _buildActionTile(
+                  'Test thông báo khuyến mãi',
+                  'Gửi thông báo khuyến mãi',
+                  Icons.local_offer,
+                  _testPromoNotification,
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 16),
           _buildThemeSection(),
+          const SizedBox(height: 16),
+          _buildSecuritySection(),
           const SizedBox(height: 16),
           _buildSection(
             'Tài khoản',
@@ -230,6 +276,121 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildSecuritySection() {
+    final colors = AppColors.of(context);
+    final pinVM = context.watch<PinViewModel>();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.card,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Icon(Icons.lock_outline, color: kAccentColor, size: 20),
+                const SizedBox(width: 12),
+                const Text(
+                  'Bảo mật ứng dụng',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Divider(color: colors.border, height: 1),
+          CustomSwitchTile(
+            title: 'Khóa bằng mã PIN',
+            subtitle: 'Yêu cầu mã PIN khi mở ứng dụng',
+            value: pinVM.isPinEnabled,
+            onChanged: (value) => _togglePinLock(value, pinVM),
+          ),
+          if (pinVM.isPinEnabled)
+            _buildActionTile(
+              'Đổi mã PIN',
+              'Thay đổi mã PIN hiện tại',
+              Icons.chevron_right,
+              () => _navigateToChangePIN(),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _togglePinLock(bool enable, PinViewModel pinVM) async {
+    if (enable) {
+      // Navigate to setup PIN
+      final result = await Navigator.pushNamed(
+        context,
+        '/pin-setup',
+        arguments: {'isRequired': false, 'isChangingPin': false},
+      );
+
+      // PIN setup screen sẽ tự bật PIN nếu thành công
+      if (result == true) {
+        _showSnackBar('Đã bật khóa bằng mã PIN');
+      }
+    } else {
+      // Xác nhận tắt PIN
+      _showDisablePinDialog(pinVM);
+    }
+  }
+
+  void _navigateToChangePIN() {
+    Navigator.pushNamed(
+      context,
+      '/pin-setup',
+      arguments: {'isRequired': false, 'isChangingPin': true},
+    );
+  }
+
+  void _showDisablePinDialog(PinViewModel pinVM) {
+    final colors = AppColors.of(context);
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: colors.card,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.lock_open, color: colors.yellow),
+            const SizedBox(width: 12),
+            const Text('Tắt khóa PIN'),
+          ],
+        ),
+        content: const Text(
+          'Bạn có chắc muốn tắt khóa bằng mã PIN?\n\n'
+          'Ứng dụng sẽ không yêu cầu mã PIN khi mở.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text('Hủy', style: TextStyle(color: colors.secondaryText)),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              await pinVM.disablePin();
+              if (mounted) {
+                _showSnackBar('Đã tắt khóa bằng mã PIN');
+              }
+            },
+            child: Text('Tắt', style: TextStyle(color: colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSwitchTile(
     String title,
     String subtitle,
@@ -327,6 +488,73 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  // ==================== TEST NOTIFICATION METHODS ====================
+
+  Future<void> _testInstantNotification() async {
+    // Request permission first
+    final hasPermission = await _notificationService.requestPermission();
+    if (!hasPermission) {
+      _showSnackBar('Vui lòng cấp quyền thông báo trong cài đặt');
+      return;
+    }
+
+    await _notificationService.showNotification(
+      id: DateTime.now().millisecondsSinceEpoch,
+      title: '🔔 Test Thông Báo',
+      body: 'Đây là thông báo test ngay lập tức từ VeritaShop!',
+      payload: 'test_instant',
+      type: NotificationType.general,
+    );
+    _showSnackBar('Đã gửi thông báo!');
+  }
+
+  Future<void> _testScheduledNotification() async {
+    final hasPermission = await _notificationService.requestPermission();
+    if (!hasPermission) {
+      _showSnackBar('Vui lòng cấp quyền thông báo trong cài đặt');
+      return;
+    }
+
+    final scheduledTime = DateTime.now().add(const Duration(seconds: 5));
+    await _notificationService.scheduleNotification(
+      id: DateTime.now().millisecondsSinceEpoch,
+      title: '⏰ Thông Báo Lên Lịch',
+      body: 'Thông báo này được lên lịch trước 5 giây!',
+      scheduledTime: scheduledTime,
+      payload: 'test_scheduled',
+      type: NotificationType.reminder,
+    );
+    _showSnackBar('Thông báo sẽ hiện sau 5 giây!');
+  }
+
+  Future<void> _testOrderNotification() async {
+    final hasPermission = await _notificationService.requestPermission();
+    if (!hasPermission) {
+      _showSnackBar('Vui lòng cấp quyền thông báo trong cài đặt');
+      return;
+    }
+
+    await _notificationService.notifyNewOrder('VTS20260104TEST');
+    _showSnackBar('Đã gửi thông báo đơn hàng!');
+  }
+
+  Future<void> _testPromoNotification() async {
+    final hasPermission = await _notificationService.requestPermission();
+    if (!hasPermission) {
+      _showSnackBar('Vui lòng cấp quyền thông báo trong cài đặt');
+      return;
+    }
+
+    await _notificationService.notifyPromo(
+      title: 'Giảm giá 50%!',
+      description: 'Nhập mã SALE50 để được giảm 50% cho đơn hàng đầu tiên. Chỉ hôm nay!',
+      promoCode: 'SALE50',
+    );
+    _showSnackBar('Đã gửi thông báo khuyến mãi!');
+  }
+
+  // ==================== END TEST NOTIFICATION METHODS ====================
+
   void _showClearCacheDialog() {
     final colors = AppColors.of(context);
     showDialog(
@@ -407,22 +635,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final colors = AppColors.of(context);
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: colors.card,
         title: const Text('Đăng xuất'),
         content: const Text('Bạn có chắc muốn đăng xuất khỏi tài khoản?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Hủy'),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                '/login',
-                (route) => false,
-              );
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+
+              // Reset PIN state (không xóa PIN data - giữ lại cho lần login sau)
+              final pinVM = context.read<PinViewModel>();
+              pinVM.resetPinStateOnLogout();
+
+              // Logout
+              final authVM = context.read<AuthViewModel>();
+              await authVM.logout();
+
+              if (mounted) {
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  '/login',
+                  (route) => false,
+                );
+              }
             },
             child: const Text('Đăng xuất', style: TextStyle(color: kRedColor)),
           ),

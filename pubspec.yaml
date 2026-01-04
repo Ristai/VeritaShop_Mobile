@@ -61,10 +61,19 @@ dependencies:
   intl: ^0.19.0
   fl_chart: ^1.1.1
 
+  # PIN Authentication
+  crypto: ^3.0.3
+
   # Local Notifications
   flutter_local_notifications: ^18.0.1
   timezone: ^0.10.0
   permission_handler: ^11.3.1
+
+  # URL Launcher for MoMo payment
+  url_launcher: ^6.2.6
+
+  # Deep Links for MoMo callback
+  app_links: ^6.4.0
 
 dev_dependencies:
   flutter_test:

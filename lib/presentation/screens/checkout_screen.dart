@@ -8,8 +8,12 @@ import '../../data/models/coupon_model.dart';
 import '../../data/repositories/coupon_repository.dart';
 import '../view_models/cart_view_model.dart';
 import '../view_models/order_view_model.dart';
+import '../view_models/pin_view_model.dart';
+import '../view_models/payment_view_model.dart';
 import '../widgets/custom_button.dart';
+import '../widgets/pin_input.dart';
 import 'order_success_screen.dart';
+import 'payment_processing_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -88,6 +92,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Future<void> _placeOrder() async {
     final cartViewModel = context.read<CartViewModel>();
     final orderViewModel = context.read<OrderViewModel>();
+    final pinViewModel = context.read<PinViewModel>();
+    final paymentViewModel = context.read<PaymentViewModel>();
 
     if (orderViewModel.selectedAddress == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -97,6 +103,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ),
       );
       return;
+    }
+
+    // Kiểm tra nếu user đã bật PIN, yêu cầu xác thực
+    if (pinViewModel.isPinEnabled) {
+      final verified = await _showPinVerificationDialog();
+      if (!verified) return; // User hủy hoặc nhập sai
     }
 
     final cartSummary = cartViewModel.cartSummary;
@@ -109,12 +121,22 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
 
     if (order != null && mounted) {
-      await cartViewModel.clearCart();
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => OrderSuccessScreen(order: order),
-        ),
-      );
+      // Nếu là MoMo payment, chuyển đến màn hình xử lý thanh toán
+      if (orderViewModel.selectedPaymentMethod == 'MoMo') {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => PaymentProcessingScreen(order: order),
+          ),
+        );
+      } else {
+        // COD - clear cart và chuyển đến màn hình thành công
+        await cartViewModel.clearCart();
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => OrderSuccessScreen(order: order),
+          ),
+        );
+      }
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -123,6 +145,131 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ),
       );
     }
+  }
+
+  /// Hiển thị bottom sheet xác thực PIN
+  /// Trả về true nếu user nhập đúng PIN, false nếu hủy hoặc sai
+  Future<bool> _showPinVerificationDialog() async {
+    final colors = AppColors.of(context);
+    final pinViewModel = context.read<PinViewModel>();
+    bool showError = false;
+    String? errorMessage;
+
+    final result = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      isDismissible: true,
+      backgroundColor: colors.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Handle bar
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: colors.border,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Icon và title
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: kAccentColor.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.lock_outline,
+                        color: kAccentColor,
+                        size: 30,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Xác thực đặt hàng',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: colors.primaryText,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Nhập mã PIN để xác nhận đặt hàng',
+                      style: TextStyle(
+                        color: colors.secondaryText,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+
+                    // PIN Input
+                    PinInput(
+                      pinLength: 6,
+                      showError: showError,
+                      errorMessage: errorMessage,
+                      onCompleted: (pin) async {
+                        final isValid = await pinViewModel.verifyPin(pin);
+                        if (isValid) {
+                          Navigator.of(dialogContext).pop(true);
+                        } else {
+                          setModalState(() {
+                            showError = true;
+                            errorMessage = 'Mã PIN không đúng. Còn ${pinViewModel.remainingAttempts} lần thử';
+                          });
+                          // Reset error sau 2 giây
+                          Future.delayed(const Duration(seconds: 2), () {
+                            if (context.mounted) {
+                              setModalState(() {
+                                showError = false;
+                                errorMessage = null;
+                              });
+                            }
+                          });
+                        }
+                      },
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Nút hủy
+                    TextButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(false),
+                      child: Text(
+                        'Hủy',
+                        style: TextStyle(
+                          color: colors.secondaryText,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    return result ?? false;
   }
 
   @override
@@ -401,6 +548,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     switch (method) {
       case 'COD':
         return 'Thanh toán khi nhận hàng (COD)';
+      case 'MoMo':
+        return 'Ví MoMo';
       default:
         return method;
     }
@@ -746,6 +895,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final colors = AppColors.of(context);
     return Consumer<OrderViewModel>(
       builder: (context, orderViewModel, _) {
+        final isMoMo = orderViewModel.selectedPaymentMethod == 'MoMo';
+        final buttonText = orderViewModel.isLoading
+            ? 'Đang xử lý...'
+            : (isMoMo ? 'Thanh toán với MoMo' : 'Đặt hàng');
+
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -756,7 +910,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ),
           child: SafeArea(
             child: CustomButton(
-              text: orderViewModel.isLoading ? 'Đang xử lý...' : 'Đặt hàng',
+              text: buttonText,
               onPressed: orderViewModel.isLoading ? null : _placeOrder,
               isLoading: orderViewModel.isLoading,
             ),

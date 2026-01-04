@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/constants/app_colors.dart';
 import '../view_models/auth_view_model.dart';
+import '../view_models/pin_view_model.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -65,7 +66,28 @@ class _SplashScreenState extends State<SplashScreen>
     if (!mounted) return;
     
     if (authViewModel.isAuthenticated) {
-      // Đã đăng nhập -> điều hướng ngay không cần chờ
+      // Đã đăng nhập -> kiểm tra PIN
+      final pinVM = context.read<PinViewModel>();
+      await pinVM.checkPinStatus();
+
+      if (!mounted) return;
+
+      // Trường hợp 1: User cũ chưa từng setup PIN (bắt buộc tạo)
+      if (!pinVM.hasCompletedSetup) {
+        Navigator.of(context).pushReplacementNamed(
+          '/pin-setup',
+          arguments: {'isRequired': true},
+        );
+        return;
+      }
+
+      // Trường hợp 2: User có PIN đang bật, cần xác thực
+      if (pinVM.isPinEnabled && !pinVM.isPinVerified) {
+        Navigator.of(context).pushReplacementNamed('/pin-lock');
+        return;
+      }
+
+      // Trường hợp 3: User đã tắt PIN hoặc đã xác thực
       final isAdmin = authViewModel.currentUser?.role == 'admin';
       if (isAdmin) {
         Navigator.of(context).pushReplacementNamed('/admin');
