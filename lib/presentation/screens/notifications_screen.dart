@@ -146,11 +146,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   void _handleNotificationTap(BuildContext context, NotificationModel notification) {
-    // Có thể navigate đến chi tiết đơn hàng hoặc sản phẩm
+    // Navigate đến trang đơn hàng nếu là thông báo đơn hàng
+    if (notification.isOrderNotification) {
+      Navigator.pushNamed(context, '/orders');
+      return;
+    }
+    
+    // Các loại thông báo khác (khuyến mãi, hệ thống)
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Đã xem: ${notification.title}'),
-        duration: const Duration(seconds: 2),
+        content: Text(notification.message),
+        duration: const Duration(seconds: 3),
       ),
     );
   }

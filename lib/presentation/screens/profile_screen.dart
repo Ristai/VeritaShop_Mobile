@@ -154,12 +154,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 16),
           OutlinedButton.icon(
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Tính năng chỉnh sửa thông tin sẽ sớm được cập nhật'),
-                  backgroundColor: kYellowColor,
-                ),
-              );
+              Navigator.pushNamed(context, '/edit-profile');
             },
             icon: const Icon(Icons.edit, size: 18),
             label: const Text('Chỉnh sửa'),
@@ -289,19 +284,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             icon: Icons.location_on_outlined,
             title: 'Địa chỉ giao hàng',
             onTap: () => Navigator.pushNamed(context, '/addresses'),
-          ),
-          Divider(color: colors.border, height: 1),
-          _buildOptionItem(
-            icon: Icons.settings_outlined,
-            title: 'Cài đặt',
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Tính năng cài đặt sẽ sớm được cập nhật'),
-                  backgroundColor: kYellowColor,
-                ),
-              );
-            },
           ),
           Divider(color: colors.border, height: 1),
           _buildOptionItem(

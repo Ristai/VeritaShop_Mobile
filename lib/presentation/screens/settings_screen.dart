@@ -42,19 +42,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Cài đặt',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Tùy chỉnh ứng dụng theo ý muốn của bạn',
-            style: TextStyle(color: colors.secondaryText),
-          ),
-          const SizedBox(height: 24),
           _buildSection(
             'Thông báo',
             Icons.notifications_outlined,
@@ -112,44 +99,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Thông tin cá nhân',
                 'Xem và chỉnh sửa thông tin tài khoản',
                 Icons.chevron_right,
-                () => _showSnackBar('Mở thông tin cá nhân'),
+                () => Navigator.pushNamed(context, '/profile'),
               ),
               _buildActionTile(
                 'Đổi mật khẩu',
                 'Cập nhật mật khẩu đăng nhập',
                 Icons.chevron_right,
-                () => _showSnackBar('Mở đổi mật khẩu'),
+                () => Navigator.pushNamed(context, '/change-password'),
               ),
               _buildActionTile(
                 'Liên kết tài khoản',
                 'Google, Facebook, Apple',
                 Icons.chevron_right,
-                () => _showSnackBar('Mở liên kết tài khoản'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _buildSection(
-            'Dữ liệu & Bảo mật',
-            Icons.security_outlined,
-            [
-              _buildActionTile(
-                'Xuất dữ liệu',
-                'Tải xuống tất cả dữ liệu của bạn',
-                Icons.download_outlined,
-                () => _showSnackBar('Đang xuất dữ liệu...'),
-              ),
-              _buildActionTile(
-                'Xóa dữ liệu cache',
-                'Giải phóng bộ nhớ đệm',
-                Icons.delete_outline,
-                () => _showClearCacheDialog(),
-              ),
-              _buildActionTile(
-                'Chính sách bảo mật',
-                'Xem chính sách bảo mật của chúng tôi',
-                Icons.chevron_right,
-                () => _showSnackBar('Mở chính sách bảo mật'),
+                () => _showSnackBar('Tính năng đang phát triển'),
               ),
             ],
           ),
