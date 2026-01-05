@@ -183,11 +183,25 @@ class OrderViewModel extends ChangeNotifier {
 
     _setLoading(true);
     try {
+      // Check if this is a direct checkout (Buy Now)
+      // Direct checkout items have IDs starting with 'direct_'
+      final isDirectCheckout = cartSummary.items.any((item) => item.id.startsWith('direct_'));
+      
+      List<Map<String, dynamic>>? directItems;
+      if (isDirectCheckout) {
+        directItems = cartSummary.items.map((item) => {
+          'product': item.productId,
+          'quantity': item.quantity,
+          'color': item.color.toMap(),
+        }).toList();
+      }
+
       final order = await _orderRepository.createOrder(
         shippingAddress: _selectedAddress!,
         paymentMethod: _selectedPaymentMethod,
         note: note,
         couponCode: couponCode,
+        items: directItems, // Pass items if direct checkout
       );
       
       if (order != null) {

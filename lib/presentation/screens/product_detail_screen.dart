@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/utils/currency_formatter.dart';
 import '../view_models/product_view_model.dart';
 import '../view_models/cart_view_model.dart';
 import '../view_models/wishlist_view_model.dart';
@@ -1115,7 +1116,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ),
                 ),
                 Text(
-                  '${(widget.product.price * _quantity / 1000000).toStringAsFixed(1)}M đ',
+                  formatVND(widget.product.price * _quantity),
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,

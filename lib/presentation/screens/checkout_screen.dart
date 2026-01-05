@@ -44,7 +44,7 @@ class DirectCheckoutItem {
       quantity: quantity,
       color: CartColor(
         name: color['name'] ?? 'Mặc định',
-        code: color['hex'],
+        code: color['code'] ?? color['hex'],
       ),
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),

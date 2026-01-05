@@ -68,6 +68,7 @@ class OrderRepository {
     required String paymentMethod,
     String? note,
     String? couponCode,
+    List<Map<String, dynamic>>? items,
   }) async {
     try {
       final response = await _apiService.createOrder(
@@ -82,6 +83,7 @@ class OrderRepository {
         paymentMethod: paymentMethod,
         note: note,
         couponCode: couponCode,
+        items: items,
       );
 
       if (response['success'] == true && response['data'] != null) {
