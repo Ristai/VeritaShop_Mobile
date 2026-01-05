@@ -214,7 +214,8 @@ class CartSummary {
   /// Tạo CartSummary từ danh sách items
   factory CartSummary.fromItems(List<CartModel> items) {
     final subtotal = items.fold<double>(0, (sum, item) => sum + item.totalPrice);
-    const shippingFee = 30000.0; // 30k shipping fee
+    // Free shipping if subtotal >= 500,000 VND
+    final shippingFee = subtotal >= 500000 ? 0.0 : 30000.0;
     const taxRate = 0.1; // 10% tax
     final tax = subtotal * taxRate;
     final total = subtotal + shippingFee + tax;

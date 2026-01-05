@@ -182,12 +182,14 @@ class ApiService {
     required String paymentMethod,
     String? note,
     String? couponCode,
+    List<Map<String, dynamic>>? items,
   }) async {
     final response = await dio.post('/orders', data: {
       'shippingAddress': shippingAddress,
       'paymentMethod': paymentMethod,
       if (note != null) 'note': note,
       if (couponCode != null) 'couponCode': couponCode,
+      if (items != null) 'items': items,
     });
     return response.data;
   }

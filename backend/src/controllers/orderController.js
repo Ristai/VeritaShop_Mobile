@@ -11,7 +11,7 @@ const { createNotification } = require('./notificationController');
 // @route   POST /api/orders
 const createOrder = async (req, res, next) => {
   try {
-    const { shippingAddress, paymentMethod = 'COD', note, couponCode } = req.body;
+    const { shippingAddress, paymentMethod = 'COD', note, couponCode, items: directItems } = req.body;
 
     // Validate shipping address
     if (!shippingAddress || !shippingAddress.fullName || !shippingAddress.phone || 
@@ -20,25 +20,46 @@ const createOrder = async (req, res, next) => {
       return errorResponse(res, 'Vui lòng nhập đầy đủ địa chỉ giao hàng', 400, 'INVALID_ADDRESS');
     }
 
-    // Get user's cart
-    const cart = await Cart.findOne({ user: req.user._id }).populate({
-      path: 'items.product',
-      select: 'name brand price images stock isActive',
-    });
+    let itemsToProcess = [];
 
-    if (!cart || cart.items.length === 0) {
-      return errorResponse(res, 'Giỏ hàng trống', 400, 'EMPTY_CART');
+    if (directItems && Array.isArray(directItems) && directItems.length > 0) {
+      // Handle direct checkout items
+      itemsToProcess = directItems;
+    } else {
+      // Get user's cart
+      const cart = await Cart.findOne({ user: req.user._id }).populate({
+        path: 'items.product',
+        select: 'name brand price images stock isActive',
+      });
+
+      if (!cart || cart.items.length === 0) {
+        return errorResponse(res, 'Giỏ hàng trống hoặc không có sản phẩm', 400, 'EMPTY_CART');
+      }
+      
+      // Map cart items to the format expected for processing
+      itemsToProcess = cart.items.map(item => ({
+        product: item.product, // Populated product object
+        color: item.color,
+        quantity: item.quantity,
+        price: item.price
+      }));
     }
 
     // Validate stock and prepare order items
     const orderItems = [];
     const stockUpdates = [];
 
-    for (const item of cart.items) {
-      const product = item.product;
+    for (const item of itemsToProcess) {
+      // If direct checkout, product might be just an ID string, need to fetch it
+      let product = item.product;
+      
+      // Check if product is just an ID (direct checkout case) or populated object (cart case)
+      if (!product._id) { 
+          product = await Product.findById(item.product);
+      }
 
       if (!product || !product.isActive) {
-        return errorResponse(res, `Sản phẩm "${item.product?.name || 'không xác định'}" không còn bán`, 400, 'PRODUCT_INACTIVE');
+        return errorResponse(res, `Sản phẩm "${product?.name || 'không xác định'}" không còn bán`, 400, 'PRODUCT_INACTIVE');
       }
 
       if (product.stock < item.quantity) {
@@ -52,7 +73,7 @@ const createOrder = async (req, res, next) => {
         image: product.images[0] || '',
         color: item.color,
         quantity: item.quantity,
-        price: item.price,
+        price: product.price, // Use current price from DB to prevent client manipulation
       });
 
       stockUpdates.push({
@@ -117,11 +138,15 @@ const createOrder = async (req, res, next) => {
       });
     }
 
-    // Only clear cart immediately for COD orders
+    // Only clear cart immediately for COD orders created FROM THE CART (not direct checkout)
     // For online payment methods, cart is cleared after successful payment
-    if (paymentMethod === 'COD') {
-      cart.items = [];
-      await cart.save();
+    if (paymentMethod === 'COD' && !directItems) {
+      // Re-fetch cart in case we didn't fetch it earlier (direct checkout flow)
+      const cartToClear = await Cart.findOne({ user: req.user._id });
+      if (cartToClear) {
+        cartToClear.items = [];
+        await cartToClear.save();
+      }
     }
 
     // Send order confirmation email (async, don't wait)
