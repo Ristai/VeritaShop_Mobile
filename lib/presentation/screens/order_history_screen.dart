@@ -1,0 +1,656 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../core/constants/app_colors.dart';
+import '../../core/utils/currency_formatter.dart';
+import '../../core/utils/date_formatter.dart';
+import '../../data/models/order_model.dart';
+import '../view_models/order_view_model.dart';
+
+class OrderHistoryScreen extends StatefulWidget {
+  const OrderHistoryScreen({super.key});
+
+  @override
+  State<OrderHistoryScreen> createState() => _OrderHistoryScreenState();
+}
+
+class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _loadOrders();
+  }
+
+  void _loadOrders() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<OrderViewModel>().loadOrders();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Scaffold(
+      backgroundColor: colors.background,
+      appBar: AppBar(
+        backgroundColor: colors.background,
+        title: Text('Lịch sử đơn hàng', style: TextStyle(color: colors.primaryText)),
+        elevation: 0,
+        iconTheme: IconThemeData(color: colors.primaryText),
+      ),
+      body: Consumer<OrderViewModel>(
+        builder: (context, orderViewModel, _) {
+          if (orderViewModel.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (orderViewModel.orders.isEmpty) {
+            return _buildEmptyState(colors);
+          }
+
+          return RefreshIndicator(
+            onRefresh: () => orderViewModel.loadOrders(),
+            color: kAccentColor,
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: orderViewModel.orders.length,
+              itemBuilder: (context, index) {
+                final order = orderViewModel.orders[index];
+                return _buildOrderCard(order, orderViewModel, colors);
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(AppColors colors) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.receipt_long_outlined,
+            size: 80,
+            color: colors.secondaryText.withValues(alpha: 0.5),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Chưa có đơn hàng nào',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+              color: colors.secondaryText,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Đơn hàng của bạn sẽ xuất hiện ở đây',
+            style: TextStyle(color: colors.secondaryText),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () => Navigator.pushNamed(context, '/products'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: kAccentColor,
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text('Mua sắm ngay'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOrderCard(OrderModel order, OrderViewModel orderViewModel, AppColors colors) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: colors.card,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        order.orderNumber.isNotEmpty ? order.orderNumber : order.id,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: colors.primaryText,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _formatDate(order.createdAt),
+                        style: TextStyle(
+                          color: colors.secondaryText,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                _buildStatusBadge(order.status),
+              ],
+            ),
+          ),
+          Divider(color: colors.border, height: 1),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                ...order.items.take(2).map((item) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: Image.network(
+                              item.productImageUrl,
+                              width: 50,
+                              height: 50,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                width: 50,
+                                height: 50,
+                                color: colors.background,
+                                child: Icon(Icons.image, size: 20, color: colors.secondaryText),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.productName,
+                                  style: TextStyle(fontSize: 13, color: colors.primaryText),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  'x${item.quantity}',
+                                  style: TextStyle(
+                                    color: colors.secondaryText,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            formatVND(item.totalPrice),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              fontSize: 13,
+                              color: colors.primaryText,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )),
+                if (order.items.length > 2)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      '+${order.items.length - 2} sản phẩm khác',
+                      style: TextStyle(
+                        color: colors.secondaryText,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Divider(color: colors.border, height: 1),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Tổng cộng',
+                      style: TextStyle(
+                        color: colors.secondaryText,
+                        fontSize: 12,
+                      ),
+                    ),
+                    Text(
+                      formatVND(order.total),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: kAccentColor,
+                      ),
+                    ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    if (order.status == OrderStatus.pending)
+                      TextButton(
+                        onPressed: () => _showCancelDialog(order, orderViewModel, colors),
+                        child: const Text(
+                          'Hủy đơn',
+                          style: TextStyle(color: kRedColor),
+                        ),
+                      ),
+                    if (order.status == OrderStatus.cancelled || order.status == OrderStatus.delivered)
+                      TextButton(
+                        onPressed: () => _handleReorder(order, orderViewModel),
+                        child: const Text(
+                          'Đặt lại',
+                          style: TextStyle(color: kGreenColor),
+                        ),
+                      ),
+                    OutlinedButton(
+                      onPressed: () => _showOrderDetail(order, orderViewModel, colors),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: kAccentColor,
+                        side: const BorderSide(color: kAccentColor),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text('Chi tiết'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge(OrderStatus status) {
+    Color color;
+    switch (status) {
+      case OrderStatus.pending:
+        color = kYellowColor;
+        break;
+      case OrderStatus.confirmed:
+      case OrderStatus.processing:
+        color = kAccentColor;
+        break;
+      case OrderStatus.shipping:
+      case OrderStatus.shipped:
+        color = kPurpleColor;
+        break;
+      case OrderStatus.delivered:
+      case OrderStatus.completed:
+        color = kGreenColor;
+        break;
+      case OrderStatus.cancelled:
+        color = kRedColor;
+        break;
+      case OrderStatus.refunded:
+        color = Colors.grey;
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        _getStatusText(status),
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+  String _getStatusText(OrderStatus status) {
+    switch (status) {
+      case OrderStatus.pending:
+        return 'Chờ xác nhận';
+      case OrderStatus.confirmed:
+        return 'Đã xác nhận';
+      case OrderStatus.processing:
+        return 'Đang xử lý';
+      case OrderStatus.shipping:
+      case OrderStatus.shipped:
+        return 'Đang giao';
+      case OrderStatus.delivered:
+        return 'Đã giao';
+      case OrderStatus.completed:
+        return 'Hoàn thành';
+      case OrderStatus.cancelled:
+        return 'Đã hủy';
+      case OrderStatus.refunded:
+        return 'Đã hoàn tiền';
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    return formatVietnamDateTime(date);
+  }
+
+  void _showCancelDialog(OrderModel order, OrderViewModel orderViewModel, AppColors colors) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: colors.card,
+        title: Text('Hủy đơn hàng', style: TextStyle(color: colors.primaryText)),
+        content: Text('Bạn có chắc muốn hủy đơn hàng ${order.orderNumber.isNotEmpty ? order.orderNumber : order.id}?', style: TextStyle(color: colors.secondaryText)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Không', style: TextStyle(color: colors.secondaryText)),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final success = await orderViewModel.cancelOrder(order.id);
+              if (mounted && success) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Đã hủy đơn hàng'),
+                    backgroundColor: kGreenColor,
+                  ),
+                );
+              }
+            },
+            child: const Text('Hủy đơn', style: TextStyle(color: kRedColor)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleReorder(OrderModel order, OrderViewModel orderViewModel) async {
+    final success = await orderViewModel.reorder(order.id);
+    if (mounted) {
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đã thêm sản phẩm vào giỏ hàng'),
+            backgroundColor: kGreenColor,
+          ),
+        );
+        Navigator.pushNamed(context, '/cart');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(orderViewModel.errorMessage ?? 'Không thể đặt lại đơn hàng'),
+            backgroundColor: kRedColor,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showOrderDetail(OrderModel order, OrderViewModel orderViewModel, AppColors colors) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: colors.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.8,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (context, scrollController) {
+          return SingleChildScrollView(
+            controller: scrollController,
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: colors.border,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      order.orderNumber.isNotEmpty ? order.orderNumber : order.id,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: colors.primaryText,
+                      ),
+                    ),
+                    _buildStatusBadge(order.status),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _formatDate(order.createdAt),
+                  style: TextStyle(color: colors.secondaryText),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Địa chỉ giao hàng',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: colors.primaryText,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: colors.background,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        order.shippingAddress.fullName,
+                        style: TextStyle(fontWeight: FontWeight.w500, color: colors.primaryText),
+                      ),
+                      Text(
+                        order.shippingAddress.phone,
+                        style: TextStyle(color: colors.secondaryText),
+                      ),
+                      Text(
+                        order.shippingAddress.fullAddress,
+                        style: TextStyle(color: colors.secondaryText),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Sản phẩm',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: colors.primaryText,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ...order.items.map((item) => Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: colors.background,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: Image.network(
+                              item.productImageUrl,
+                              width: 60,
+                              height: 60,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.productName,
+                                  style: TextStyle(fontWeight: FontWeight.w500, color: colors.primaryText),
+                                ),
+                                Text(
+                                  '${formatVND(item.price)} x ${item.quantity}',
+                                  style: TextStyle(color: colors.secondaryText),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            formatVND(item.totalPrice),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: kAccentColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )),
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: colors.background,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildSummaryRow('Tạm tính', formatVND(order.subtotal), colors),
+                      const SizedBox(height: 8),
+                      _buildSummaryRow('Phí vận chuyển', formatVND(order.shippingFee), colors),
+                      const SizedBox(height: 8),
+                      _buildSummaryRow('Thuế', formatVND(order.tax), colors),
+                      Divider(color: colors.border, height: 24),
+                      _buildSummaryRow(
+                        'Tổng cộng',
+                        formatVND(order.total),
+                        colors,
+                        isBold: true,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildSummaryRow('Phương thức thanh toán', order.paymentMethod, colors),
+                if (order.note != null && order.note!.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    'Ghi chú',
+                    style: TextStyle(fontWeight: FontWeight.bold, color: colors.primaryText),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    order.note!,
+                    style: TextStyle(color: colors.secondaryText),
+                  ),
+                ],
+                const SizedBox(height: 24),
+                // Action buttons
+                Row(
+                  children: [
+                    if (order.status == OrderStatus.pending)
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _showCancelDialog(order, orderViewModel, colors);
+                          },
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: kRedColor,
+                            side: const BorderSide(color: kRedColor),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: const Text('Hủy đơn hàng'),
+                        ),
+                      ),
+                    if (order.status == OrderStatus.cancelled || order.status == OrderStatus.delivered) ...[
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _handleReorder(order, orderViewModel);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: kAccentColor,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: const Text('Đặt lại đơn hàng', style: TextStyle(color: Colors.white)),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 40),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSummaryRow(String label, String value, AppColors colors, {bool isBold = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: isBold ? colors.primaryText : colors.secondaryText,
+            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            color: isBold ? kAccentColor : colors.primaryText,
+            fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+}

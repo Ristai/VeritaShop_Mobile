@@ -1,0 +1,327 @@
+{
+  "product_id": "694d9ca99eb4dabea15e33c3",
+  "generated_at": "2026-01-04T21:35:54.872Z",
+  "data_updated_at": "04:35 ngày 05/01/2026",
+  "data_notice": "Thông tin sản phẩm được cập nhật đến 04:35 ngày 05/01/2026. Dữ liệu có thể đã thay đổi sau thời điểm này.",
+  "product_info": {
+    "name": "thiên đầu bùi",
+    "brand": "iPhone",
+    "price": 22000,
+    "condition": "new",
+    "warranty": "12 tháng",
+    "stock_status": "low_stock",
+    "rating": 5,
+    "review_count": 28,
+    "specs": {
+      "ram": "8GB",
+      "rom": "256GB",
+      "chip": "ad",
+      "battery": "5000mAh",
+      "screen": "â",
+      "camera": "a"
+    },
+    "colors": [
+      "Mặc định"
+    ]
+  },
+  "all_reviews": [
+    {
+      "review_id": "695a75d36c36f0567c4714de",
+      "user_name": "testt",
+      "rating": 5,
+      "title": null,
+      "text": "pin tốt lắm bạn ơi",
+      "sentiment": "positive",
+      "aspects_mentioned": [
+        "Battery"
+      ],
+      "sentiment_analysis": [
+        {
+          "aspect": "Battery",
+          "sentiment": "positive"
+        }
+      ],
+      "created_at": "2026-01-04",
+      "is_verified_purchase": false,
+      "likes": 0
+    },
+    {
+      "review_id": "69597d77c60132caa83ac618",
+      "user_name": "testt",
+      "rating": 5,
+      "title": null,
+      "text": "pin tệ quá được cái camera đẹp",
+      "sentiment": "neutral",
+      "aspects_mentioned": [
+        "Battery",
+        "Camera"
+      ],
+      "sentiment_analysis": [
+        {
+          "aspect": "Battery",
+          "sentiment": "negative"
+        },
+        {
+          "aspect": "Camera",
+          "sentiment": "positive"
+        }
+      ],
+      "created_at": "2026-01-03",
+      "is_verified_purchase": false,
+      "likes": 0
+    },
+    {
+      "review_id": "69597d5ec60132caa83ac607",
+      "user_name": "testt",
+      "rating": 5,
+      "title": null,
+      "text": "awejawiuouaucisucizjciasdoasisd0qwaidoasjdoasndsadsafsdfsdfsd",
+      "sentiment": "neutral",
+      "aspects_mentioned": [],
+      "sentiment_analysis": [
+        {
+          "aspect": "Others",
+          "sentiment": "none"
+        }
+      ],
+      "created_at": "2026-01-03",
+      "is_verified_purchase": false,
+      "likes": 0
+    },
+    {
+      "review_id": "69597d53c60132caa83ac5f5",
+      "user_name": "testt",
+      "rating": 5,
+      "title": null,
+      "text": "ASDASDA9*z89127397129jsIZOXJoi231#!@3123124",
+      "sentiment": "neutral",
+      "aspects_mentioned": [
+        "General"
+      ],
+      "sentiment_analysis": [
+        {
+          "aspect": "General",
+          "sentiment": "neutral"
+        },
+        {
+          "aspect": "Others",
+          "sentiment": "none"
+        }
+      ],
+      "created_at": "2026-01-03",
+      "is_verified_purchase": false,
+      "likes": 0
+    },
+    {
+      "review_id": "69597d4ac60132caa83ac5da",
+      "user_name": "testt",
+      "rating": 5,
+      "title": null,
+      "text": "QS1XZXCZXCZXC213123123",
+      "sentiment": "neutral",
+      "aspects_mentioned": [
+        "General"
+      ],
+      "sentiment_analysis": [
+        {
+          "aspect": "General",
+          "sentiment": "neutral"
+        },
+        {
+          "aspect": "Others",
+          "sentiment": "none"
+        }
+      ],
+      "created_at": "2026-01-03",
+      "is_verified_purchase": false,
+      "likes": 0
+    },
+    {
+      "review_id": "69597cbbc60132caa83ac5b0",
+      "user_name": "testt",
+      "rating": 5,
+      "title": null,
+      "text": "zczxczxc09890vxcvxcv8327412683yzxczxczxcxcvxcx",
+      "sentiment": "neutral",
+      "aspects_mentioned": [],
+      "sentiment_analysis": [
+        {
+          "aspect": "Others",
+          "sentiment": "none"
+        }
+      ],
+      "created_at": "2026-01-03",
+      "is_verified_purchase": false,
+      "likes": 0
+    },
+    {
+      "review_id": "69597cb1c60132caa83ac59e",
+      "user_name": "testt",
+      "rating": 5,
+      "title": null,
+      "text": "dasdasdsad9as0892139123123123123414",
+      "sentiment": "neutral",
+      "aspects_mentioned": [
+        "General"
+      ],
+      "sentiment_analysis": [
+        {
+          "aspect": "General",
+          "sentiment": "neutral"
+        },
+        {
+          "aspect": "Others",
+          "sentiment": "none"
+        }
+      ],
+      "created_at": "2026-01-03",
+      "is_verified_purchase": false,
+      "likes": 0
+    },
+    {
+      "review_id": "69597be8c60132caa83ac574",
+      "user_name": "testt",
+      "rating": 5,
+      "title": null,
+      "text": "điện thoại tệ quá",
+      "sentiment": "negative",
+      "aspects_mentioned": [
+        "General"
+      ],
+      "sentiment_analysis": [
+        {
+          "aspect": "General",
+          "sentiment": "negative"
+        }
+      ],
+      "created_at": "2026-01-03",
+      "is_verified_purchase": false,
+      "likes": 0
+    },
+    {
+      "review_id": "69597bdbc60132caa83ac563",
+      "user_name": "testt",
+      "rating": 5,
+      "title": null,
+      "text": "zxzxdoiuwa893781293zbxczxczxc",
+      "sentiment": "neutral",
+      "aspects_mentioned": [],
+      "sentiment_analysis": [
+        {
+          "aspect": "Others",
+          "sentiment": "none"
+        }
+      ],
+      "created_at": "2026-01-03",
+      "is_verified_purchase": false,
+      "likes": 0
+    },
+    {
+      "review_id": "69597ac1c60132caa83ac52d",
+      "user_name": "testt",
+      "rating": 5,
+      "title": null,
+      "text": "zxzx213123125zsczxczxcxcvxfbv",
+      "sentiment": "neutral",
+      "aspects_mentioned": [],
+      "sentiment_analysis": [
+        {
+          "aspect": "Others",
+          "sentiment": "none"
+        }
+      ],
+      "created_at": "2026-01-03",
+      "is_verified_purchase": false,
+      "likes": 0
+    },
+    {
+      "review_id": "695977946506789972ae4f69",
+      "user_name": "testt",
+      "rating": 5,
+      "title": null,
+      "text": "iuhasiohasoihsaoisnaosisaoijsa",
+      "sentiment": "neutral",
+      "aspects_mentioned": [],
+      "sentiment_analysis": [],
+      "created_at": "2026-01-03",
+      "is_verified_purchase": false,
+      "likes": 0
+    },
+    {
+      "review_id": "6959778b6506789972ae4f58",
+      "user_name": "testt",
+      "rating": 5,
+      "title": null,
+      "text": "hihhhuhuhuh",
+      "sentiment": "neutral",
+      "aspects_mentioned": [
+        "General"
+      ],
+      "sentiment_analysis": [
+        {
+          "aspect": "General",
+          "sentiment": "neutral"
+        }
+      ],
+      "created_at": "2026-01-03",
+      "is_verified_purchase": false,
+      "likes": 0
+    },
+    {
+      "review_id": "695973926506789972ae4e7a",
+      "user_name": "testt",
+      "rating": 5,
+      "title": null,
+      "text": "địt mẹ mày",
+      "sentiment": "negative",
+      "aspects_mentioned": [
+        "General"
+      ],
+      "sentiment_analysis": [
+        {
+          "aspect": "General",
+          "sentiment": "negative"
+        }
+      ],
+      "created_at": "2026-01-03",
+      "is_verified_purchase": false,
+      "likes": 0
+    }
+  ],
+  "active_coupons": [
+    {
+      "code": "WELCOME10",
+      "description": "Giảm 10% cho khách hàng mới",
+      "discount_type": "percentage",
+      "discount_value": 10,
+      "end_date": "2026-12-25",
+      "max_discount": 500000,
+      "min_order": 1000000
+    },
+    {
+      "code": "SALE20",
+      "description": "Giảm 20% tối đa 1 triệu",
+      "discount_type": "percentage",
+      "discount_value": 20,
+      "end_date": "2026-01-24",
+      "max_discount": 1000000,
+      "min_order": 5000000
+    },
+    {
+      "code": "FREESHIP",
+      "description": "Miễn phí vận chuyển",
+      "discount_type": "fixed",
+      "discount_value": 30000,
+      "end_date": "2026-03-25",
+      "min_order": 500000
+    },
+    {
+      "code": "IPHONE500K",
+      "description": "Giảm 500K khi mua iPhone",
+      "discount_type": "fixed",
+      "discount_value": 500000,
+      "end_date": "2026-02-23",
+      "min_order": 15000000
+    }
+  ]
+}

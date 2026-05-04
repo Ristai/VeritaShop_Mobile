@@ -1,0 +1,28 @@
+{
+  "export_date": "2026-01-04",
+  "generated_at": "2026-01-04T21:35:54.495Z",
+  "total_files": 1,
+  "files": [
+    {
+      "file": "product_694d9ca99eb4dabea15e33c3.json",
+      "product_id": "694d9ca99eb4dabea15e33c3",
+      "attributes": {
+        "product_id": "694d9ca99eb4dabea15e33c3",
+        "brand": "iPhone",
+        "price": 22000,
+        "price_range": "0-5M",
+        "stock_status": "low_stock",
+        "condition": "new",
+        "overall_rating": 5,
+        "review_count": 28,
+        "has_active_coupon": true,
+        "Battery_score": 50,
+        "Camera_score": 100,
+        "Performance_score": 50,
+        "Display_score": 50,
+        "Design_score": 50,
+        "Price_score": 50
+      }
+    }
+  ]
+}
